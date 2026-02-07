@@ -1,0 +1,72 @@
+
+    <svg width="1123" height="794" viewBox="0 0 1123 794" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <radialGradient id="grad1" cx="50%" cy="50%" r="70%" fx="50%" fy="50%">
+                <stop offset="0%" style="stop-color:#002a4d;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#001220;stop-opacity:1" />
+            </radialGradient>
+            
+            <pattern id="hexagons" width="100" height="88" patternUnits="userSpaceOnUse">
+                <path d="M25 0 L75 0 L100 44 L75 88 L25 88 L0 44 Z" fill="none" stroke="#00A8E8" stroke-width="1" opacity="0.1"/>
+            </pattern>
+        </defs>
+
+        <rect width="100%" height="100%" fill="url(#grad1)" />
+        
+        <rect width="100%" height="100%" fill="url(#hexagons)" />
+        
+        <path d="M900 100 L950 100 L975 144 L950 188 L900 188 L875 144 Z" fill="none" stroke="#00A8E8" stroke-width="2" opacity="0.3" />
+        <path d="M100 500 L150 500 L175 544 L150 588 L100 588 L75 544 Z" fill="none" stroke="#00A8E8" stroke-width="2" opacity="0.3" />
+
+        <g transform="translate(60, 50)">
+            <path d="M10 10 H50 V40 H20 V20 H40" fill="none" stroke="white" stroke-width="3" />
+            <rect x="0" y="0" width="60" height="60" rx="5" stroke="white" stroke-width="2" fill="none"/>
+            <text x="75" y="20" font-family="Arial, sans-serif" font-size="14" fill="white" font-weight="bold" letter-spacing="2">THE DATA</text>
+            <text x="75" y="38" font-family="Arial, sans-serif" font-size="14" fill="white" font-weight="bold" letter-spacing="2">SCIENCE</text>
+            <text x="75" y="56" font-family="Arial, sans-serif" font-size="14" fill="white" font-weight="bold" letter-spacing="2">ACADEMY</text>
+        </g>
+
+        <g transform="translate(973, 50)">
+            <circle cx="50" cy="50" r="35" stroke="white" stroke-width="3" fill="none" />
+            <circle cx="50" cy="50" r="28" stroke="white" stroke-width="1" stroke-dasharray="4 2" fill="none" />
+            <text x="50" y="58" text-anchor="middle" font-family="Arial" font-size="24" fill="white">★</text>
+            <path d="M20 20 L50 0 L80 20" fill="none" stroke="white" stroke-width="3"/>
+        </g>
+
+        <g transform="translate(561.5, 220)" text-anchor="middle">
+            <text y="0" font-family="Arial, sans-serif" font-size="52" fill="white" font-weight="bold" letter-spacing="6">CERTIFICATE</text>
+            <text y="50" font-family="Arial, sans-serif" font-size="24" fill="white" font-weight="bold" letter-spacing="8">OF COMPLETION</text>
+            
+            <text y="100" font-family="Arial, sans-serif" font-size="14" fill="#B0B0B0" letter-spacing="2">THIS IS PRESENTED TO</text>
+        </g>
+
+        <line x1="150" y1="420" x2="973" y2="420" stroke="white" stroke-width="4" />
+
+        <text x="561.5" y="390" text-anchor="middle" font-family="Arial, sans-serif" font-size="48" fill="white" font-weight="bold">
+            RAHUL SHARMA
+        </text>
+
+        <g transform="translate(561.5, 480)" text-anchor="middle">
+            <text y="0" font-family="Arial, sans-serif" font-size="18" fill="#B0B0B0">for successfully completing the course</text>
+            <text y="40" font-family="Arial, sans-serif" font-size="28" fill="white" font-weight="bold">Data Science Bootcamp by The Data Science Academy (TDSA)</text>
+            <text y="80" font-family="Arial, sans-serif" font-size="18" fill="white">on January 17, 2026</text>
+        </g>
+
+        <g transform="translate(60, 614)">
+            <path d="M40 0 L10 20 L40 40" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M40 50 L10 70 L40 90" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M40 100 L10 120 L40 140" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+
+        <g transform="translate(0, 694)">
+            <line x1="300" y1="0" x2="500" y2="0" stroke="#B0B0B0" stroke-width="1" />
+            <text x="400" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="white" font-weight="bold">Shivansh Shukla</text>
+            <text x="400" y="55" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#B0B0B0">Founder & Trainer</text>
+
+            <line x1="623" y1="0" x2="823" y2="0" stroke="#B0B0B0" stroke-width="1" />
+            <text x="723" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="white" font-weight="bold">Shivangini Gupta</text>
+            <text x="723" y="55" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#B0B0B0">Trainer</text>
+        </g>
+
+    </svg>
+    
