@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { 
-    Plus, Trash2, Edit, BookOpen, Clock, 
-    MoreVertical, FileCheck, AlertCircle 
+import {
+    Plus, Trash2, Edit, BookOpen, Clock,
+    MoreVertical, FileCheck, AlertCircle
 } from "lucide-react";
 import QuizForm from "./QuizForm"; // Ensure this path is correct
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = `${import.meta.env.VITE_API_URL}/api`;
 
 const Quizzes = ({ authToken, assignedCourses, quizzes, fetchQuizzes, allQuizResults = {} }) => {
     const [showQuizForm, setShowQuizForm] = useState(false);
@@ -14,7 +14,7 @@ const Quizzes = ({ authToken, assignedCourses, quizzes, fetchQuizzes, allQuizRes
     // Delete Quiz Handler
     const handleDelete = async (quizId) => {
         if (!window.confirm("Are you sure? This action cannot be undone.")) return;
-        
+
         try {
             const res = await fetch(`${API_BASE}/faculty/quizzes/${quizId}`, {
                 method: 'DELETE',
@@ -50,15 +50,15 @@ const Quizzes = ({ authToken, assignedCourses, quizzes, fetchQuizzes, allQuizRes
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
-            
+
             {/* Header */}
             <div className="flex justify-between items-center bg-zinc-900/50 p-6 rounded-xl border border-zinc-800">
                 <div>
                     <h2 className="text-xl font-bold text-white">My Quizzes</h2>
                     <p className="text-sm text-zinc-500">Manage assessments and exams for your courses.</p>
                 </div>
-                <button 
-                    onClick={handleCreate} 
+                <button
+                    onClick={handleCreate}
                     className="flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg shadow-lg shadow-violet-900/20 transition-all active:scale-95"
                 >
                     <Plus size={18} /> Create Quiz
@@ -82,7 +82,7 @@ const Quizzes = ({ authToken, assignedCourses, quizzes, fetchQuizzes, allQuizRes
 
                         return (
                             <div key={quiz._id} className="group bg-zinc-900 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-all overflow-hidden flex flex-col relative">
-                                
+
                                 {/* ✅ FINAL EXAM BADGE */}
                                 {quiz.isFinalExam && (
                                     <div className="absolute top-0 right-0 bg-violet-600 text-white text-[10px] uppercase font-bold px-3 py-1 rounded-bl-xl z-10 shadow-sm">
@@ -134,7 +134,7 @@ const Quizzes = ({ authToken, assignedCourses, quizzes, fetchQuizzes, allQuizRes
 
             {/* Quiz Form Modal */}
             {showQuizForm && (
-                <QuizForm 
+                <QuizForm
                     authToken={authToken}
                     assignedCourses={assignedCourses}
                     editingQuiz={editingQuiz}

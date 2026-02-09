@@ -15,7 +15,7 @@ const EditClass = () => {
   useEffect(() => {
     const fetchClass = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/faculty/myclasses`, {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/faculty/myclasses`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('facultyToken')}` }
         });
         const cls = res.data.find(c => c._id === id);
@@ -43,7 +43,7 @@ const EditClass = () => {
         date: new Date(formData.date)
       };
 
-      await axios.put(`http://localhost:5000/api/faculty/class/${id}`, payload, {
+      await axios.put(`${import.meta.env.VITE_API_URL}/api/faculty/class/${id}`, payload, {
         headers: { Authorization: `Bearer ${localStorage.getItem('facultyToken')}` }
       });
 

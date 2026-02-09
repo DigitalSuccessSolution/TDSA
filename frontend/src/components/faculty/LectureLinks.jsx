@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { 
-  Plus, Trash2, Video, FileVideo, Archive, Globe, X, 
-  Loader2, Link as LinkIcon, ExternalLink, PlayCircle 
+import {
+    Plus, Trash2, Video, FileVideo, Archive, Globe, X,
+    Loader2, Link as LinkIcon, ExternalLink, PlayCircle
 } from "lucide-react";
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = `${import.meta.env.VITE_API_URL}/api`;
 
 const LectureLinks = ({ authToken, assignedCourses, loading, fetchAssignedCourses }) => {
     // --- UI States ---
@@ -90,17 +90,17 @@ const LectureLinks = ({ authToken, assignedCourses, loading, fetchAssignedCourse
 
         return (
             <div className={`group flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-full border transition-all duration-200 ${config.style}`}>
-                <a 
-                    href={link.url} 
-                    target="_blank" 
-                    rel="noreferrer" 
+                <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noreferrer"
                     className="flex items-center gap-2 text-xs font-medium hover:underline decoration-white/30 underline-offset-2"
                 >
                     {config.icon}
                     <span>{link.type}</span>
                     <ExternalLink size={10} className="opacity-50" />
                 </a>
-                
+
                 <div className="w-px h-3 bg-current opacity-20 mx-1"></div>
 
                 <button
@@ -123,7 +123,7 @@ const LectureLinks = ({ authToken, assignedCourses, loading, fetchAssignedCourse
             </div>
 
             <div className="relative z-10 max-w-6xl mx-auto px-6 py-12">
-                
+
                 {/* Header */}
                 <div className="mb-8 lg:mb-16">
                     <h1 className="text-2xl lg:text-4xl md:text-5xl font-bold tracking-tight mb-3">
@@ -153,7 +153,7 @@ const LectureLinks = ({ authToken, assignedCourses, loading, fetchAssignedCourse
                     <div className="space-y-20">
                         {assignedCourses.map((course) => (
                             <div key={course.courseId} className="animate-in fade-in slide-in-from-bottom-6 duration-700">
-                                
+
                                 {/* Course Header */}
                                 <div className="flex items-center gap-4 mb-8">
                                     <div className="h-8 w-1 bg-gradient-to-b from-indigo-500 to-cyan-500 rounded-full" />
@@ -165,8 +165,8 @@ const LectureLinks = ({ authToken, assignedCourses, loading, fetchAssignedCourse
                                 {/* Modules Grid */}
                                 <div className="grid gap-6">
                                     {course.modules?.map((module) => (
-                                        <div 
-                                            key={module._id} 
+                                        <div
+                                            key={module._id}
                                             className="group bg-zinc-900/40 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden hover:border-white/10 transition-colors duration-300"
                                         >
                                             {/* Module Title */}
@@ -223,7 +223,7 @@ const LectureLinks = ({ authToken, assignedCourses, loading, fetchAssignedCourse
                                                         </div>
                                                     );
                                                 })}
-                                                
+
                                                 {(!module.lectures || module.lectures.length === 0) && (
                                                     <div className="p-6 text-center text-zinc-600 text-sm italic">
                                                         No lectures in this module.
@@ -243,14 +243,14 @@ const LectureLinks = ({ authToken, assignedCourses, loading, fetchAssignedCourse
             {showLinkForm && currentContext && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
                     {/* Backdrop */}
-                    <div 
-                        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
+                    <div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
                         onClick={() => setShowLinkForm(false)}
                     />
-                    
+
                     {/* Modal Content */}
                     <div className="relative w-full max-w-lg bg-[#0e0e11] border border-zinc-800 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                        
+
                         {/* Modal Header */}
                         <div className="px-8 py-6 border-b border-zinc-800 bg-zinc-900/30 flex justify-between items-start">
                             <div>
@@ -285,11 +285,10 @@ const LectureLinks = ({ authToken, assignedCourses, loading, fetchAssignedCourse
                                         <button
                                             key={type}
                                             onClick={() => setNewLinkType(type)}
-                                            className={`px-4 py-3 rounded-xl text-sm font-medium border transition-all ${
-                                                newLinkType === type
+                                            className={`px-4 py-3 rounded-xl text-sm font-medium border transition-all ${newLinkType === type
                                                     ? "bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-900/20"
                                                     : "bg-zinc-900/50 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-                                            }`}
+                                                }`}
                                         >
                                             {type}
                                         </button>

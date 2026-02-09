@@ -34,13 +34,12 @@ const CourseCard = ({ course, index, openCurriculum, className }) => (
             <span className="text-white font-bold text-lg">{index + 1}</span>
           </div>
           <div
-            className={`px-3 py-1.5 rounded-full border text-xs font-semibold ${
-              course.level === "Beginner"
+            className={`px-3 py-1.5 rounded-full border text-xs font-semibold ${course.level === "Beginner"
                 ? "bg-green-500/15 text-green-300 border-green-400/20"
                 : course.level === "Intermediate"
                   ? "bg-yellow-500/15 text-yellow-300 border-yellow-400/20"
                   : "bg-purple-500/15 text-purple-300 border-purple-400/20"
-            }`}
+              }`}
           >
             {course.level}
           </div>
@@ -113,7 +112,7 @@ const Courses = () => {
   };
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/courses")
+    fetch(`${import.meta.env.VITE_API_URL}/api/courses`)
       .then((res) => res.json())
       .then((data) => {
         setCourses(data);

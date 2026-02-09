@@ -149,7 +149,7 @@ const CourseCurriculum = () => {
   // --- API CALLS ---
   const checkEnrollmentStatus = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/enrollments", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/enrollments`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -171,7 +171,7 @@ const CourseCurriculum = () => {
 
   const fetchCourse = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/courses");
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/courses`);
       const courses = await res.json();
       const decoded = decodeURIComponent(urlSlug.replace(/-/g, " "));
       const found = courses.find(
@@ -202,7 +202,7 @@ const CourseCurriculum = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const res = await fetch("http://localhost:5000/api/enrollments", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/enrollments`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -254,7 +254,7 @@ const CourseCurriculum = () => {
     setSubmittingReview(true);
     try {
       const res = await fetch(
-        `http://localhost:5000/api/courses/${course._id}/review`,
+        `${import.meta.env.VITE_API_URL}/api/courses/${course._id}/review`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -306,16 +306,14 @@ const CourseCurriculum = () => {
       return (
         <Star
           key={i}
-          className={`w-5 h-5 transition-all duration-300 ${
-            ratingValue <=
-            (interactive ? hoverStars || currentRating : currentRating)
+          className={`w-5 h-5 transition-all duration-300 ${ratingValue <=
+              (interactive ? hoverStars || currentRating : currentRating)
               ? "text-yellow-500 fill-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]"
               : "text-zinc-600"
-          } ${
-            interactive
+            } ${interactive
               ? "cursor-pointer hover:scale-110 hover:text-yellow-400"
               : ""
-          }`}
+            }`}
           onClick={() => {
             if (interactive) {
               if (onClickHandler) onClickHandler(ratingValue);
@@ -426,39 +424,35 @@ const CourseCurriculum = () => {
                   <div
                     key={mod._id}
                     onClick={() => setActiveModule(mod._id)}
-                    className={`p-5 cursor-pointer transition-all duration-300 group ${
-                      activeModule === mod._id
+                    className={`p-5 cursor-pointer transition-all duration-300 group ${activeModule === mod._id
                         ? "bg-pink-500/5 border-l-[4px] border-l-pink-500"
                         : "hover:bg-white/[0.02] border-l-[4px] border-l-transparent"
-                    }`}
+                      }`}
                   >
                     <div className="flex justify-between items-center">
                       <div className="flex-1 pr-4">
                         <div
-                          className={`text-xs font-bold uppercase tracking-wider mb-1.5 transition-colors ${
-                            activeModule === mod._id
+                          className={`text-xs font-bold uppercase tracking-wider mb-1.5 transition-colors ${activeModule === mod._id
                               ? "text-pink-400"
                               : "text-zinc-500 group-hover:text-pink-400"
-                          }`}
+                            }`}
                         >
                           Module {i + 1}
                         </div>
                         <h3
-                          className={`text-lg font-semibold transition-colors leading-tight ${
-                            activeModule === mod._id
+                          className={`text-lg font-semibold transition-colors leading-tight ${activeModule === mod._id
                               ? "text-white"
                               : "text-zinc-300 group-hover:text-white"
-                          }`}
+                            }`}
                         >
                           {mod.title}
                         </h3>
                       </div>
                       <div
-                        className={`p-1.5 rounded-full transition-all ${
-                          activeModule === mod._id
+                        className={`p-1.5 rounded-full transition-all ${activeModule === mod._id
                             ? "bg-pink-500/10 text-pink-400"
                             : "text-zinc-600 group-hover:text-zinc-300"
-                        }`}
+                          }`}
                       >
                         {activeModule === mod._id ? (
                           <ChevronRight className="animate-pulse" size={20} />
@@ -537,28 +531,25 @@ const CourseCurriculum = () => {
                         className="border-b border-white/5 last:border-b-0 transition-colors duration-300 hover:bg-white/[0.02]"
                       >
                         <div
-                          className={`p-5 flex justify-between items-center cursor-pointer group ${
-                            open ? "bg-white/[0.02]" : ""
-                          }`}
+                          className={`p-5 flex justify-between items-center cursor-pointer group ${open ? "bg-white/[0.02]" : ""
+                            }`}
                           onClick={() => toggleLecture(lec._id)}
                         >
                           <div className="flex items-center gap-4 flex-1 pr-4">
                             <div
-                              className={`p-1 rounded-lg transition-all duration-300 ${
-                                open
+                              className={`p-1 rounded-lg transition-all duration-300 ${open
                                   ? "bg-pink-500/10 text-pink-400 rotate-90"
                                   : "text-zinc-600 group-hover:text-zinc-400"
-                              }`}
+                                }`}
                             >
                               <ChevronRight size={16} />
                             </div>
 
                             <span
-                              className={`text-sm font-medium transition-colors ${
-                                open
+                              className={`text-sm font-medium transition-colors ${open
                                   ? "text-pink-300"
                                   : "text-zinc-300 group-hover:text-white"
-                              }`}
+                                }`}
                             >
                               <span className="opacity-50 mr-2 text-zinc-500">
                                 {i + 1}.
@@ -569,11 +560,10 @@ const CourseCurriculum = () => {
 
                           <button
                             onClick={(e) => handleJoinClass(e, lec)}
-                            className={`flex items-center justify-center w-9 h-9 rounded-xl border transition-all duration-300 shadow-lg ${
-                              isEnrolled
+                            className={`flex items-center justify-center w-9 h-9 rounded-xl border transition-all duration-300 shadow-lg ${isEnrolled
                                 ? "bg-gradient-to-br from-pink-600 to-purple-700 border-transparent text-white hover:scale-105 shadow-[0_4px_15px_rgba(236,72,153,0.2)]"
                                 : "bg-black border-zinc-800 text-zinc-600 hover:border-pink-500/50 hover:text-pink-400"
-                            }`}
+                              }`}
                             title={
                               isEnrolled ? "Start Learning" : "Locked Content"
                             }
@@ -588,11 +578,10 @@ const CourseCurriculum = () => {
 
                         {/* Accordion Content */}
                         <div
-                          className={`grid transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-                            open
+                          className={`grid transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${open
                               ? "grid-rows-[1fr] opacity-100"
                               : "grid-rows-[0fr] opacity-0"
-                          }`}
+                            }`}
                         >
                           <div className="overflow-hidden">
                             <div className="px-6 pb-6 pl-[4.5rem] pt-2">
@@ -1192,7 +1181,7 @@ const CourseCurriculum = () => {
             </p>
             <div className="space-y-4">
               {activeLectureLinks.lectureLinks &&
-              activeLectureLinks.lectureLinks.length > 0 ? (
+                activeLectureLinks.lectureLinks.length > 0 ? (
                 activeLectureLinks.lectureLinks.map((link, idx) => (
                   <a
                     key={idx}
