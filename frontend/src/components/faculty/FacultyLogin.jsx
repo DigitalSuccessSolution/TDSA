@@ -14,7 +14,7 @@ const FacultyLogin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:5000/api/faculty/login', formData);
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/faculty/login`, formData);
       localStorage.setItem('facultyToken', res.data.token);
       navigate('/faculty/dashboard');
     } catch (err) {

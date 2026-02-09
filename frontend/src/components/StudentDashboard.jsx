@@ -23,7 +23,7 @@
 //     try {
 //       setLoading(true);
       
-//       const res = await fetch('http://localhost:5000/api/enrollments', {
+//       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/enrollments`, {
 //         headers: { Authorization: `Bearer ${token}` }
 //       });
       
@@ -39,11 +39,11 @@
 
 //         try {
 //           if (typeof enrollment.course === 'string' || !enrollment.course?.subject) {
-//              const cRes = await fetch(`http://localhost:5000/api/courses/${courseId}`);
+//              const cRes = await fetch(`${import.meta.env.VITE_API_URL}/api/courses/${courseId}`);
 //              if(cRes.ok) courseDetails = await cRes.json();
 //           }
 
-//           const qRes = await fetch(`http://localhost:5000/api/student/quizzes/${courseId}`, {
+//           const qRes = await fetch(`${import.meta.env.VITE_API_URL}/api/student/quizzes/${courseId}`, {
 //              headers: { Authorization: `Bearer ${token}` }
 //           });
           

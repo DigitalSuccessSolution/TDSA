@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useContext, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { 
-    Loader2, CheckCircle, AlertTriangle, ShieldAlert, 
-    Maximize, Lock, EyeOff, Menu, SquareCheckBig, 
+import {
+    Loader2, CheckCircle, AlertTriangle, ShieldAlert,
+    Maximize, Lock, EyeOff, Menu, SquareCheckBig,
     XCircle, Check, ChevronRight, RotateCcw, HelpCircle,
     Trophy, BarChart2, Upload, FileText, Trash2, Clock
 } from 'lucide-react';
 
 // --- Component 1: Question Navigation (Smart Sidebar) ---
 const QuestionNavigation = ({ quiz, answers, isResultMode = false, detailedResults = [] }) => {
-    
+
     const scrollToQuestion = (index) => {
         const element = document.getElementById(`question-${index}`);
         if (element) {
@@ -21,13 +21,13 @@ const QuestionNavigation = ({ quiz, answers, isResultMode = false, detailedResul
     return (
         <div className="sticky top-24 w-full p-5 bg-zinc-900/80 backdrop-blur-md rounded-2xl border border-zinc-800 shadow-xl">
             <h3 className="text-sm font-bold text-zinc-400 mb-4 uppercase tracking-wider flex items-center gap-2 border-b border-zinc-800 pb-3">
-                <Menu size={16} className="text-blue-500"/>
+                <Menu size={16} className="text-blue-500" />
                 {isResultMode ? "Overview" : `Navigator`}
             </h3>
             <div className="grid grid-cols-5 gap-2 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar">
                 {quiz.questions.map((q, index) => {
                     let btnClass = 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white border border-transparent';
-                    
+
                     if (isResultMode && detailedResults.length > 0) {
                         const resultData = detailedResults.find(r => r.questionId === q._id);
                         if (resultData?.isCorrect) {
@@ -64,9 +64,9 @@ const QuizPlayer = () => {
     const [quiz, setQuiz] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    
-    const [answers, setAnswers] = useState({}); 
-    const [pdfFile, setPdfFile] = useState(null); 
+
+    const [answers, setAnswers] = useState({});
+    const [pdfFile, setPdfFile] = useState(null);
     const [result, setResult] = useState(null);
 
     // --- NEW: Submission State ---
@@ -79,7 +79,7 @@ const QuizPlayer = () => {
     const [showWarning, setShowWarning] = useState(false);
     const [warningMessage, setWarningMessage] = useState('');
     const [isTerminated, setIsTerminated] = useState(false);
-    
+
     const MAX_VIOLATIONS_ALLOWED = 3;
 
     // Refs
@@ -119,12 +119,12 @@ const QuizPlayer = () => {
 
         const newCount = violationsRef.current + 1;
         setTabSwitchCount(newCount);
-        
+
         if (newCount >= MAX_VIOLATIONS_ALLOWED) {
             handleTerminateQuiz("Security Violation Limit Reached.");
         } else {
-            setWarningMessage(type === 'blur' 
-                ? "Switching tabs or minimizing window is prohibited!" 
+            setWarningMessage(type === 'blur'
+                ? "Switching tabs or minimizing window is prohibited!"
                 : "You must stay in Full Screen mode!"
             );
             setShowWarning(true);
@@ -180,7 +180,7 @@ const QuizPlayer = () => {
     const fetchQuizData = async () => {
         try {
             setLoading(true);
-            const res = await fetch(`http://localhost:5000/api/student/quiz/${id}`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/student/quiz/${id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (!res.ok) throw new Error("Failed to load quiz.");
@@ -226,7 +226,7 @@ const QuizPlayer = () => {
                 alert("Invalid file type. Allowed: PDF, DOC, JPG, PNG");
                 return;
             }
-            if (file.size > 5 * 1024 * 1024) { 
+            if (file.size > 5 * 1024 * 1024) {
                 alert("File size must be less than 5MB.");
                 return;
             }
@@ -240,15 +240,15 @@ const QuizPlayer = () => {
 
     const handleSubmit = async (isForced = false) => {
         if (isSubmitting) return; // Prevent double clicks
-        
-        if(!isForced && !window.confirm("Are you sure you want to finish the exam?")) return;
-        
+
+        if (!isForced && !window.confirm("Are you sure you want to finish the exam?")) return;
+
         if (quiz.isFinalExam && !pdfFile && !isForced) {
-             if(!window.confirm("Warning: You haven't uploaded an answer sheet. Submit anyway?")) return;
+            if (!window.confirm("Warning: You haven't uploaded an answer sheet. Submit anyway?")) return;
         }
 
         setIsSubmitting(true); // Start Loading
-        isTerminatedRef.current = true; 
+        isTerminatedRef.current = true;
 
         try {
             const formattedResponses = Object.keys(answers).map(qId => ({
@@ -261,22 +261,22 @@ const QuizPlayer = () => {
 
             // ✅ Exact Key for your backend
             if (pdfFile) {
-                formData.append('answerSheet', pdfFile); 
+                formData.append('answerSheet', pdfFile);
             }
 
-            const res = await fetch(`http://localhost:5000/api/student/quizzes/${id}/submit`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/student/quizzes/${id}/submit`, {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Authorization': `Bearer ${token}`
                 },
                 body: formData
             });
 
             const data = await res.json();
-            if(res.ok) {
-                if (document.exitFullscreen) document.exitFullscreen().catch(err => {});
+            if (res.ok) {
+                if (document.exitFullscreen) document.exitFullscreen().catch(err => { });
                 setResult(data);
-                window.scrollTo(0, 0); 
+                window.scrollTo(0, 0);
             } else {
                 alert(data.message || "Submission failed");
             }
@@ -312,11 +312,11 @@ const QuizPlayer = () => {
     // --- RENDER HELPERS ---
     if (loading) return (
         <div className="min-h-screen bg-[#09090b] flex flex-col justify-center items-center gap-4">
-            <Loader2 className="animate-spin w-10 h-10 text-blue-500"/>
+            <Loader2 className="animate-spin w-10 h-10 text-blue-500" />
             <p className="text-zinc-500 animate-pulse font-medium">Preparing Environment...</p>
         </div>
     );
-    
+
     if (error) return (
         <div className="min-h-screen bg-[#09090b] flex justify-center items-center p-6">
             <div className="text-center">
@@ -366,7 +366,7 @@ const QuizPlayer = () => {
                         {quiz.questions.map((q, index) => {
                             const qResult = getQuestionResult(q._id);
                             const isCorrect = qResult?.isCorrect;
-                            
+
                             return (
                                 <div key={q._id} id={`question-${index + 1}`} className={`rounded-2xl border overflow-hidden transition-all ${isCorrect ? 'bg-zinc-900/40 border-zinc-800' : 'bg-red-900/5 border-red-900/20'}`}>
                                     <div className="p-3 md:p-6">
@@ -374,7 +374,7 @@ const QuizPlayer = () => {
                                             <h3 className="text-lg font-medium flex gap-4 leading-relaxed text-zinc-100 pr-4">
                                                 <span className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold border ${isCorrect ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
                                                     {index + 1}
-                                                </span> 
+                                                </span>
                                                 {q.questionText}
                                             </h3>
                                             {isCorrect ? <CheckCircle className="text-green-500 flex-shrink-0" /> : <XCircle className="text-red-500 flex-shrink-0" />}
@@ -383,8 +383,8 @@ const QuizPlayer = () => {
                                         <div className="grid gap-3">
                                             {q.options.map((opt) => {
                                                 const wasSelected = qResult?.selectedOptionIds?.includes(opt._id);
-                                                
-                                                let optionClass = "bg-zinc-900/50 border-zinc-800 text-zinc-400"; 
+
+                                                let optionClass = "bg-zinc-900/50 border-zinc-800 text-zinc-400";
                                                 let icon = null;
 
                                                 if (wasSelected) {
@@ -441,7 +441,7 @@ const QuizPlayer = () => {
             <div className="min-h-screen bg-[#09090b] flex items-center justify-center p-6">
                 <div className="max-w-lg w-full bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden group">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 opacity-80"></div>
-                    
+
                     <div className="flex flex-col items-center text-center mb-10">
                         <div className="w-20 h-20 bg-zinc-800 rounded-2xl flex items-center justify-center mb-6 shadow-inner border border-zinc-700">
                             <Lock size={36} className="text-blue-500" />
@@ -452,7 +452,7 @@ const QuizPlayer = () => {
                             <span className="text-xs font-semibold text-blue-400 uppercase tracking-wide">Proctored Environment</span>
                         </div>
                     </div>
-                    
+
                     <div className="space-y-4 mb-8">
                         <div className="flex items-start gap-4 p-4 bg-zinc-950/50 rounded-xl border border-zinc-800/80 hover:border-zinc-700 transition">
                             <Maximize size={22} className="text-zinc-400 mt-0.5 shrink-0" />
@@ -479,7 +479,7 @@ const QuizPlayer = () => {
                         )}
                     </div>
 
-                    <button 
+                    <button
                         onClick={handleStartExam}
                         className="w-full py-4 bg-white text-black font-bold rounded-xl shadow-xl shadow-white/5 hover:bg-zinc-200 transition-all flex items-center justify-center gap-2"
                     >
@@ -505,14 +505,14 @@ const QuizPlayer = () => {
                         </div>
                         <h3 className="text-xl font-bold text-white mb-2">Proctoring Alert</h3>
                         <p className="text-zinc-400 mb-6 text-sm leading-relaxed">{warningMessage}</p>
-                        
+
                         <div className="bg-red-950/30 p-4 rounded-xl border border-red-500/20 mb-6 flex justify-between items-center">
                             <span className="text-red-300 text-xs font-medium uppercase tracking-wider">Violations Left</span>
                             <span className="text-2xl font-bold text-red-500">{MAX_VIOLATIONS_ALLOWED - tabSwitchCount}</span>
                         </div>
-                        
-                        <button 
-                            onClick={() => { setShowWarning(false); enterFullscreen(); }} 
+
+                        <button
+                            onClick={() => { setShowWarning(false); enterFullscreen(); }}
                             className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition"
                         >
                             Return to Assessment
@@ -520,7 +520,7 @@ const QuizPlayer = () => {
                     </div>
                 </div>
             )}
-            
+
             {/* Sticky Header */}
             <div className="sticky top-0 z-40 bg-[#09090b]/80 backdrop-blur-lg border-b border-zinc-800/50">
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -553,7 +553,7 @@ const QuizPlayer = () => {
                                         <h3 className="text-lg md:text-xl font-medium flex gap-5 leading-relaxed text-zinc-100 pr-4">
                                             <span className="flex-shrink-0 w-8 h-8 bg-zinc-800 rounded-lg flex items-center justify-center text-sm font-bold text-zinc-400 border border-zinc-700/50">
                                                 {index + 1}
-                                            </span> 
+                                            </span>
                                             <span className="select-none pointer-events-none">{q.questionText}</span>
                                         </h3>
                                         {answers[q._id] && answers[q._id].length > 0 && (
@@ -566,13 +566,13 @@ const QuizPlayer = () => {
                                         {q.options.map((opt) => {
                                             const isSelected = answers[q._id]?.includes(opt._id);
                                             return (
-                                                <div 
+                                                <div
                                                     key={opt._id}
                                                     onClick={() => handleOptionSelect(q._id, opt._id)}
                                                     className={`group relative p-4 pl-12 rounded-xl border cursor-pointer transition-all duration-200 select-none ${isSelected ? 'bg-blue-600/10 border-blue-500/50 shadow-[0_0_10px_-2px_rgba(37,99,235,0.2)]' : 'bg-zinc-950/30 border-zinc-800 hover:bg-zinc-800 hover:border-zinc-600'}`}
                                                 >
                                                     <div className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-zinc-600 group-hover:border-zinc-400'}`}>
-                                                        <Check size={12} className={`text-white transition-transform ${isSelected ? 'scale-100' : 'scale-0'}`}/>
+                                                        <Check size={12} className={`text-white transition-transform ${isSelected ? 'scale-100' : 'scale-0'}`} />
                                                     </div>
                                                     <span className={`text-sm md:text-base ${isSelected ? 'text-white font-medium' : 'text-zinc-400 group-hover:text-zinc-200'}`}>{opt.text}</span>
                                                 </div>
@@ -591,9 +591,9 @@ const QuizPlayer = () => {
                                 </div>
                                 <h3 className="text-lg font-bold text-white mb-2">Upload Answer Sheet</h3>
                                 <p className="text-zinc-500 text-sm mb-6 max-w-sm mx-auto">Please upload your final answer sheet (PDF or Image) to complete the submission process.</p>
-                                
+
                                 {!pdfFile ? (
-                                    <label 
+                                    <label
                                         onClick={() => { isUploadingRef.current = true; }}
                                         className="inline-flex items-center gap-2 px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-medium cursor-pointer transition border border-zinc-700 hover:border-zinc-600"
                                     >
@@ -631,14 +631,14 @@ const QuizPlayer = () => {
                         <ShieldAlert size={14} />
                         PROCTORED SESSION ID: {id.slice(-6).toUpperCase()}
                     </div>
-                    
-                    <button 
+
+                    <button
                         onClick={() => handleSubmit(false)}
                         disabled={isSubmitting}
                         className={`
                             px-8 py-3.5 rounded-xl font-bold text-base flex items-center gap-3 shadow-xl transition-all
-                            ${isSubmitting 
-                                ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' 
+                            ${isSubmitting
+                                ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
                                 : 'bg-white text-black hover:bg-zinc-200 hover:scale-[1.02]'
                             }
                         `}

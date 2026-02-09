@@ -4,7 +4,7 @@ import LectureLinks from "./LectureLinks";
 import Quizzes from "./Quizzes";
 import Results from "./Results"; // ✅ Ensure Results.js is imported
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = `${import.meta.env.VITE_API_URL}/api`;
 
 const FacultyDashboard = () => {
     // --- Auth & Profile States ---
@@ -13,7 +13,7 @@ const FacultyDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState("lecture-links");
-    
+
     // --- Data States ---
     const [assignedCourses, setAssignedCourses] = useState([]);
     const [quizzes, setQuizzes] = useState([]);
@@ -40,37 +40,37 @@ const FacultyDashboard = () => {
 
     // --- API Helpers ---
     const fetchFacultyProfile = async (token) => {
-        try { 
-            const res = await fetch(`${API_BASE}/faculty/me`, { 
-                headers: { 'Authorization': `Bearer ${token}` } 
-            }); 
-            if (res.ok) setFacultyProfile(await res.json()); 
+        try {
+            const res = await fetch(`${API_BASE}/faculty/me`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) setFacultyProfile(await res.json());
         } catch (err) { console.error(err); }
     };
 
     const fetchAssignedCourses = async () => {
         setLoading(true);
-        try { 
-            const res = await fetch(`${API_BASE}/faculty/courses`, { 
-                headers: { 'Authorization': `Bearer ${authToken}` } 
-            }); 
+        try {
+            const res = await fetch(`${API_BASE}/faculty/courses`, {
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
             if (res.ok) {
                 setAssignedCourses(await res.json());
             } else {
                 console.error("Failed to load courses");
             }
-        } catch (err) { setError(err.message); } 
+        } catch (err) { setError(err.message); }
         finally { setLoading(false); }
     };
 
     const fetchQuizzes = async () => {
         setLoading(true);
-        try { 
-            const res = await fetch(`${API_BASE}/faculty/quizzes`, { 
-                headers: { 'Authorization': `Bearer ${authToken}` } 
-            }); 
-            if (res.ok) setQuizzes(await res.json()); 
-        } catch (err) { console.error(err); } 
+        try {
+            const res = await fetch(`${API_BASE}/faculty/quizzes`, {
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
+            if (res.ok) setQuizzes(await res.json());
+        } catch (err) { console.error(err); }
         finally { setLoading(false); }
     };
 
@@ -132,16 +132,16 @@ const FacultyDashboard = () => {
 
             <main className="max-w-7xl mx-auto px-6 py-10">
                 {activeTab === "lecture-links" && (
-                    <LectureLinks 
+                    <LectureLinks
                         authToken={authToken}
                         assignedCourses={assignedCourses}
                         loading={loading}
                         fetchAssignedCourses={fetchAssignedCourses}
                     />
                 )}
-                
+
                 {activeTab === "quizzes" && (
-                    <Quizzes 
+                    <Quizzes
                         authToken={authToken}
                         assignedCourses={assignedCourses}
                         quizzes={quizzes}
@@ -149,9 +149,9 @@ const FacultyDashboard = () => {
                         fetchQuizzes={fetchQuizzes}
                     />
                 )}
-                
+
                 {activeTab === "results" && (
-                    <Results 
+                    <Results
                         authToken={authToken}
                         quizzes={quizzes} // ✅ Passed Quizzes list to populate dropdown
                     />

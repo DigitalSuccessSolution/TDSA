@@ -79,7 +79,7 @@ const AdminDashboard = () => {
   // ==============================
   const fetchCourses = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/courses");
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/courses`);
       const data = await res.json();
       setCourses(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -90,7 +90,7 @@ const AdminDashboard = () => {
   const fetchEnrollments = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/enrollments/all");
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/enrollments/all`);
       const data = await res.json();
       setEnrollments(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -102,7 +102,7 @@ const AdminDashboard = () => {
 
   const fetchAllFaculty = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/faculty");
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/faculty`);
       if (res.ok) setAllFaculty(await res.json());
     } catch (err) {
       console.error(err);
@@ -112,7 +112,7 @@ const AdminDashboard = () => {
   const fetchFacultyAssignmentsData = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/faculty/assignments");
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/faculty/assignments`);
       if (res.ok) setFacultyAssignments(await res.json());
     } catch (err) {
       console.error(err);
@@ -128,7 +128,7 @@ const AdminDashboard = () => {
     if (!window.confirm("Are you sure you want to delete this enrollment?"))
       return;
     try {
-      const res = await fetch(`http://localhost:5000/api/enrollments/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/enrollments/${id}`, {
         method: "DELETE",
       });
       if (res.ok) fetchEnrollments();
@@ -146,7 +146,7 @@ const AdminDashboard = () => {
     if (!window.confirm("Double Check: Are you absolutely sure?")) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/enrollments/all`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/enrollments/all`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -162,7 +162,7 @@ const AdminDashboard = () => {
     if (!window.confirm("Are you sure you want to remove this faculty member?"))
       return;
     try {
-      const res = await fetch(`http://localhost:5000/api/faculty/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/faculty/${id}`, {
         method: "DELETE",
       });
       if (res.ok) fetchFacultyAssignmentsData();
@@ -187,7 +187,7 @@ const AdminDashboard = () => {
 
     try {
       const res = await fetch(
-        `http://localhost:5000/api/courses/${courseId}/quizzes`
+        `${import.meta.env.VITE_API_URL}/api/courses/${courseId}/quizzes`
       );
       if (res.ok) setResultQuizzes(await res.json());
     } catch (err) {
@@ -205,7 +205,7 @@ const AdminDashboard = () => {
     setResultsLoading(true);
     try {
       const res = await fetch(
-        `http://localhost:5000/api/courses/results/${quizId}`
+        `${import.meta.env.VITE_API_URL}/api/courses/results/${quizId}`
       );
       if (res.ok) setStudentResults(await res.json());
     } catch (err) {
@@ -240,7 +240,7 @@ const AdminDashboard = () => {
     if (!window.confirm("Generate and email certificate?")) return;
     setSendingCert(resultId);
     try {
-      const res = await fetch("http://localhost:5000/api/certificate/send", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/certificate/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resultId }),
@@ -326,8 +326,8 @@ const AdminDashboard = () => {
 
     try {
       const url = editingCourse
-        ? `http://localhost:5000/api/courses/${editingCourse._id}`
-        : "http://localhost:5000/api/courses";
+        ? `${import.meta.env.VITE_API_URL}/api/courses/${editingCourse._id}`
+        : `${import.meta.env.VITE_API_URL}/api/courses`;
       const res = await fetch(url, {
         method: editingCourse ? "PUT" : "POST",
         body: formData,
@@ -395,11 +395,11 @@ const AdminDashboard = () => {
       modules.map((m, i) =>
         i === mi
           ? {
-              ...m,
-              lectures: m.lectures.map((l, idx) =>
-                idx === li ? { ...l, content: [...l.content, ""] } : l
-              ),
-            }
+            ...m,
+            lectures: m.lectures.map((l, idx) =>
+              idx === li ? { ...l, content: [...l.content, ""] } : l
+            ),
+          }
           : m
       )
     );
@@ -408,16 +408,16 @@ const AdminDashboard = () => {
       modules.map((m, i) =>
         i === mi
           ? {
-              ...m,
-              lectures: m.lectures.map((l, idx) =>
-                idx === li
-                  ? {
-                      ...l,
-                      content: l.content.filter((_, cidx) => cidx !== ci),
-                    }
-                  : l
-              ),
-            }
+            ...m,
+            lectures: m.lectures.map((l, idx) =>
+              idx === li
+                ? {
+                  ...l,
+                  content: l.content.filter((_, cidx) => cidx !== ci),
+                }
+                : l
+            ),
+          }
           : m
       )
     );
@@ -428,11 +428,11 @@ const AdminDashboard = () => {
       modules.map((m, i) =>
         i === mi
           ? {
-              ...m,
-              lectures: m.lectures.map((l, idx) =>
-                idx === li ? { ...l, title: v } : l
-              ),
-            }
+            ...m,
+            lectures: m.lectures.map((l, idx) =>
+              idx === li ? { ...l, title: v } : l
+            ),
+          }
           : m
       )
     );
@@ -441,18 +441,18 @@ const AdminDashboard = () => {
       modules.map((m, i) =>
         i === mi
           ? {
-              ...m,
-              lectures: m.lectures.map((l, idx) =>
-                idx === li
-                  ? {
-                      ...l,
-                      content: l.content.map((c, cidx) =>
-                        cidx === ci ? v : c
-                      ),
-                    }
-                  : l
-              ),
-            }
+            ...m,
+            lectures: m.lectures.map((l, idx) =>
+              idx === li
+                ? {
+                  ...l,
+                  content: l.content.map((c, cidx) =>
+                    cidx === ci ? v : c
+                  ),
+                }
+                : l
+            ),
+          }
           : m
       )
     );
@@ -477,13 +477,13 @@ const AdminDashboard = () => {
         mentors.map((m, i) =>
           i === idx
             ? {
-                ...m,
-                facultyId: facultyId,
-                name: selectedFaculty.name,
-                designation: selectedFaculty.designation || "Mentor",
-                photo: selectedFaculty.photo || "",
-                photoPreview: selectedFaculty.photo || "",
-              }
+              ...m,
+              facultyId: facultyId,
+              name: selectedFaculty.name,
+              designation: selectedFaculty.designation || "Mentor",
+              photo: selectedFaculty.photo || "",
+              photoPreview: selectedFaculty.photo || "",
+            }
             : m
         )
       );
@@ -492,14 +492,14 @@ const AdminDashboard = () => {
         mentors.map((m, i) =>
           i === idx
             ? {
-                ...m,
-                facultyId: "",
-                name: "",
-                designation: "",
-                photo: "",
-                photoFile: null,
-                photoPreview: "",
-              }
+              ...m,
+              facultyId: "",
+              name: "",
+              designation: "",
+              photo: "",
+              photoFile: null,
+              photoPreview: "",
+            }
             : m
         )
       );
@@ -544,11 +544,10 @@ const AdminDashboard = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                  activeTab === tab.id
+                className={`flex items-center gap-2 px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 ${activeTab === tab.id
                     ? "bg-white text-black shadow-lg"
                     : "text-zinc-400 hover:text-white hover:bg-white/5"
-                }`}
+                  }`}
               >
                 <tab.icon size={16} /> {tab.label}
               </button>
@@ -620,7 +619,7 @@ const AdminDashboard = () => {
                         onClick={async () => {
                           if (window.confirm("Delete this course?")) {
                             await fetch(
-                              `http://localhost:5000/api/courses/${course._id}`,
+                              `${import.meta.env.VITE_API_URL}/api/courses/${course._id}`,
                               { method: "DELETE" }
                             );
                             fetchCourses();
@@ -1220,7 +1219,7 @@ const AdminDashboard = () => {
 
                   <div className="bg-zinc-900/30 border border-white/5 rounded-2xl p-6 min-h-[100px]">
                     {existingSkillsImages.length === 0 &&
-                    skillsImagesPreviews.length === 0 ? (
+                      skillsImagesPreviews.length === 0 ? (
                       <div className="text-center text-zinc-600 py-4">
                         No skills added yet. Upload icons or badges.
                       </div>

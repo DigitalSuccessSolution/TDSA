@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { 
-    Search, FileText, ExternalLink, 
-    CheckCircle, XCircle 
+import {
+    Search, FileText, ExternalLink,
+    CheckCircle, XCircle
 } from 'lucide-react';
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = `${import.meta.env.VITE_API_URL}/api`;
 
 const Results = ({ authToken, quizzes }) => {
     const [selectedQuizId, setSelectedQuizId] = useState("");
@@ -25,7 +25,7 @@ const Results = ({ authToken, quizzes }) => {
             const res = await fetch(`${API_BASE}/faculty/quizzes/${quizId}/results`, {
                 headers: { 'Authorization': `Bearer ${authToken}` }
             });
-            
+
             if (res.ok) {
                 const data = await res.json();
                 console.log("Fetched Results Data:", data); // ✅ Check Console for 'submittedFile'
@@ -40,8 +40,8 @@ const Results = ({ authToken, quizzes }) => {
         }
     };
 
-    const filteredResults = results.filter(r => 
-        r.student?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const filteredResults = results.filter(r =>
+        r.student?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         r.student?.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -51,9 +51,9 @@ const Results = ({ authToken, quizzes }) => {
             <div className="bg-zinc-900/50 p-6 rounded-xl border border-zinc-800 flex flex-col md:flex-row gap-4 justify-between items-end md:items-center">
                 <div className="w-full md:w-1/3 space-y-1.5">
                     <label className="text-xs font-medium text-zinc-400">Select Quiz to View Results</label>
-                    <select 
-                        value={selectedQuizId} 
-                        onChange={handleQuizChange} 
+                    <select
+                        value={selectedQuizId}
+                        onChange={handleQuizChange}
                         className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-violet-500 transition-colors"
                     >
                         <option value="">-- Choose a Quiz --</option>
@@ -66,9 +66,9 @@ const Results = ({ authToken, quizzes }) => {
                 {selectedQuizId && (
                     <div className="w-full md:w-1/3 relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
-                        <input 
-                            type="text" 
-                            placeholder="Search student..." 
+                        <input
+                            type="text"
+                            placeholder="Search student..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-10 pr-4 py-2.5 text-white focus:outline-none focus:border-violet-500 transition-colors"
@@ -133,9 +133,9 @@ const Results = ({ authToken, quizzes }) => {
                                             </td>
                                             <td className="p-4 text-right">
                                                 {result.submittedFile ? (
-                                                    <a 
-                                                        href={result.submittedFile} 
-                                                        target="_blank" 
+                                                    <a
+                                                        href={result.submittedFile}
+                                                        target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors shadow-lg shadow-blue-900/20"
                                                     >

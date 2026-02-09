@@ -29,7 +29,7 @@ const AddClass = () => {
         date: new Date(formData.date)
       };
 
-      await axios.post('http://localhost:5000/api/faculty/class', payload, {
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/faculty/class`, payload, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('facultyToken')}`,
           'Content-Type': 'application/json'
@@ -113,11 +113,10 @@ const AddClass = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className={`flex-1 relative py-5 rounded-xl font-bold text-lg overflow-hidden transition-all duration-300 transform hover:scale-[1.02] ${
-                  loading 
-                    ? 'bg-zinc-700 text-zinc-400 cursor-not-allowed' 
+                className={`flex-1 relative py-5 rounded-xl font-bold text-lg overflow-hidden transition-all duration-300 transform hover:scale-[1.02] ${loading
+                    ? 'bg-zinc-700 text-zinc-400 cursor-not-allowed'
                     : 'bg-gradient-to-r from-[#D22D1E] via-[#963AB0] to-[#20469B] text-white shadow-xl hover:shadow-cyan-500/30'
-                } group`}
+                  } group`}
               >
                 <span className="relative z-10">
                   {loading ? 'Adding Class...' : 'Add Class'}
