@@ -14,9 +14,9 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 const allowedOrigins = [
-  "http://localhost:5173","https://tdsa-lime.vercel.app",
-  "http://localhost:5174",
-]; 
+  "http://localhost:5173", "https://tdsa-lime.vercel.app",
+  "http://localhost:5174", "https://tdsacad.com", "http://tdsacad.com", "https://www.tdsacad.com", "http://www.tdsacad.com"
+];
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -29,7 +29,7 @@ app.use(
       }
     },
     credentials: true,
-    methods: ['GET', 'POST','PUT', 'PATCH', 'DELETE'],  // Explicit methods
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],  // Explicit methods
     allowedHeaders: ['Content-Type', 'Authorization']  // Explicit headers
   })
 );
@@ -42,7 +42,7 @@ app.use('/api/auth', require('./routes/auth'));           // NAYA: Register & Lo
 app.use('/api/faculty', require('./routes/facultyRoutes'));
 app.use('/api/courses', require('./routes/courseRoutes'));
 app.use('/api/site', require('./routes/siteRoutes'));
-app.use('/api/enrollments', require('./routes/enrollmentRoutes')); 
+app.use('/api/enrollments', require('./routes/enrollmentRoutes'));
 app.use('/api/quizzes', require('./routes/quizRoutes'));
 app.use('/api/student', require('./routes/studentPanel'));
 app.use('/api/student/quiz', require('./routes/studentRoutes'));
