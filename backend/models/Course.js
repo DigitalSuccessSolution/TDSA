@@ -24,18 +24,18 @@ const ContentSchema = new mongoose.Schema({
 
 // NEW: LectureLinkSchema to hold multiple links
 const LectureLinkSchema = new mongoose.Schema({
-  url: { type: String, required: true }, // लिंक का URL
+  url: { type: String, required: true },
   type: {
     type: String,
     enum: ["Live", "Recording", "Backup", "Other"],
     default: "Live",
-  }, // लिंक का प्रकार
+  },
   addedAt: { type: Date, default: Date.now },
 });
 
 const LectureSchema = new mongoose.Schema({
   title: String,
-  content: [ContentSchema], // UPDATED: Lecture Links अब एक एरे है
+  content: [ContentSchema], // UPDATED: Lecture Links
   lectureLinks: [LectureLinkSchema],
 });
 
@@ -66,11 +66,15 @@ const CourseSchema = new mongoose.Schema(
     modules: [ModuleSchema],
     mentors: [MentorSchema],
 
+    // Pricing
+    mrpPrice: { type: Number, default: 0 },
+    finalPrice: { type: Number, default: 0 },
+
     // Auto calculated
     averageRating: { type: Number, default: 0 },
     totalReviews: { type: Number, default: 0 },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // IMPORTANT: Yeh hook har save pe average rating update karega

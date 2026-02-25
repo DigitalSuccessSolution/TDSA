@@ -1,164 +1,103 @@
-import React, { useEffect, useRef, useState } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Carousel from "react-multi-carousel";
-import "react-multi-carousel/lib/styles.css";
 
-gsap.registerPlugin(ScrollTrigger);
-
-// Extracted CourseCard component for reuse
-const CourseCard = ({ course, index, openCurriculum, className }) => (
-  <div className={`flex-shrink-0 ${className}`}>
-    <div className="group relative bg-linear-to-br from-white/5 to-white/10 backdrop-blur-xl border border-white/10 rounded-lg md:rounded-2xl overflow-hidden shadow-xl hover:scale-[1.02] transition-all duration-500 mx-auto">
-      <div className="relative h-52 w-full overflow-hidden bg-gray-800">
+const CourseCard = ({ course, openCurriculum }) => {
+  return (
+    <div className="flex flex-col bg-[#111111] rounded-2xl p-4 sm:p-5 border border-white/5 hover:border-white/10 transition-all duration-300">
+      {/* Course Thumbnail */}
+      <div className="relative aspect-video w-full overflow-hidden rounded-md mb-6">
         {course.thumbnail ? (
           <img
             src={course.thumbnail}
             alt={course.subject}
-            className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700"
+            className="h-40 sm:h-48 w-full object-cover"
           />
         ) : (
-          <div className="h-full flex items-center justify-center bg-linear-to-br from-purple-600/20 to-blue-600/20">
-            <span className="text-6xl font-bold text-gray-500">
-              {course.subject[0]}
+          <div className="h-full w-full flex items-center justify-center bg-zinc-900 border border-white/5 rounded-xl">
+            <span className="text-4xl font-bold text-zinc-800">
+              {course.subject?.[0]}
             </span>
           </div>
         )}
-        <div className="absolute inset-0 bg-linear-to-t from-black/50 via-black/10 to-transparent"></div>
       </div>
 
-      <div className="p-3 md:p-6 flex flex-col h-[15rem] md:h-[20rem]">
-        <div className="flex justify-between items-center mb-5">
-          <div className="w-10 h-10 rounded-2xl bg-linear-to-br from-[#D22D1E]/40 to-[#20469B]/40 border border-white/20 flex items-center justify-center">
-            <span className="text-white font-bold text-lg">{index + 1}</span>
-          </div>
-          <div
-            className={`px-3 py-1.5 rounded-full border text-xs font-semibold ${course.level === "Beginner"
-                ? "bg-green-500/15 text-green-300 border-green-400/20"
-                : course.level === "Intermediate"
-                  ? "bg-yellow-500/15 text-yellow-300 border-yellow-400/20"
-                  : "bg-purple-500/15 text-purple-300 border-purple-400/20"
-              }`}
-          >
-            {course.level}
-          </div>
+      {/* Metadata Row */}
+      <div className="flex justify-between items-center mb-4 px-1">
+        <div className="flex items-center gap-2 text-white text-[13px] font-medium">
+          <span>{course.duration || "150 Hours"}</span>
+          <span className="text-[10px] opacity-30">•</span>
+          <span>{course.modules?.length || 0} Modules</span>
         </div>
-
-        <h3 className="text-xl md:text-2xl font-extrabold text-white mb-0 md:mb-2">
-          {course.subject}
-        </h3>
-        <p className="text-gray-300 text-xs md:text-sm mb-0 md:mb-5 flex-grow line-clamp-3">
-          {course.description}
-        </p>
-
-        <div className="flex justify-between items-center py-2 border-b border-white/10 mb-0 md:mb-5">
-          <span
-            className="font-semibold text-transparent bg-clip-text text-lg"
-            style={{
-              background: "linear-gradient(90deg,#D22D1E,#963AB0,#20469B)",
-              WebkitBackgroundClip: "text",
-            }}
+        <div className="flex items-center gap-1.5">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="w-4 h-4 text-yellow-400"
           >
-            Duration
-          </span>
-          <span className="text-white font-medium bg-white/10 px-3 py-1.5 rounded-lg border border-white/10">
-            {course.duration}
+            <path
+              fillRule="evenodd"
+              d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z"
+              clipRule="evenodd"
+            />
+          </svg>
+          <span className="text-zinc-300 text-[13px] font-medium">
+            {course.averageRating || "4.8"}
           </span>
         </div>
+      </div>
 
+      {/* Course Title */}
+      <h3 className="text-xl sm:text-[22px] font-semibold text-white mb-3 leading-tight px-1">
+        {course.subject}
+      </h3>
+
+      {/* Description - 2 lines with ellipsis */}
+      <p className="text-zinc-400 text-sm leading-relaxed mb-6 px-1 line-clamp-2">
+        {course.description}...
+      </p>
+
+      {/* Course Level as Tag */}
+      <div className="flex flex-wrap gap-2 mb-8 px-1">
+        <span className="px-3 py-1.5 bg-[#1a1a1a] border border-white/5 rounded-lg text-xs font-medium text-zinc-300">
+          {course.level}
+        </span>
+      </div>
+
+      {/* Enroll Now Button */}
+      <div className="mt-auto pt-2">
         <button
           onClick={() => openCurriculum(course.subject)}
-          className="relative w-full py-3 rounded-xl text-white font-semibold overflow-hidden cursor-pointer"
-          style={{
-            background:
-              "linear-gradient(90deg,rgba(210,45,30,0.8),rgba(150,58,176,0.8),rgba(32,70,155,0.8))",
-          }}
+          className="w-full py-3.5 rounded-xl border border-zinc-700 text-white font-semibold hover:bg-white hover:text-black hover:border-white transition-all duration-300"
         >
-          <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/20 to-transparent -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%] transition-all duration-700"></div>
-          <span className="relative">View Course Details</span>
+          Enroll Now
         </button>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const Courses = () => {
-  const sectionRef = useRef(null);
-  const horizontalRef = useRef(null);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-
-  const responsive = {
-    superLargeDesktop: {
-      breakpoint: { max: 4000, min: 3000 },
-      items: 1,
-    },
-    desktop: {
-      breakpoint: { max: 3000, min: 1024 },
-      items: 1,
-    },
-    tablet: {
-      breakpoint: { max: 1024, min: 464 },
-      items: 1,
-      partialVisibilityGutter: 30,
-    },
-    mobile: {
-      breakpoint: { max: 464, min: 0 },
-      items: 1,
-      partialVisibilityGutter: 20,
-    },
-  };
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL}/api/courses`)
       .then((res) => res.json())
       .then((data) => {
-        setCourses(data);
+        if (Array.isArray(data)) {
+          setCourses(data);
+        } else {
+          setCourses([]);
+        }
         setLoading(false);
       })
       .catch((err) => {
-        console.error(err);
+        setCourses([]);
         setLoading(false);
       });
   }, []);
-
-  useEffect(() => {
-    if (loading || courses.length === 0) return;
-
-    const ctx = gsap.context(() => {
-      const mm = gsap.matchMedia();
-
-      // Desktop Only Animation (Horizontal Scroll)
-      mm.add("(min-width: 1024px)", () => {
-        // Slight delay to ensure DOM is ready
-        setTimeout(() => {
-          if (!horizontalRef.current || !sectionRef.current) return;
-
-          const totalWidth = horizontalRef.current.scrollWidth;
-          const viewportWidth = window.innerWidth;
-          const scrollDistance = totalWidth - viewportWidth + 100;
-
-          gsap.to(horizontalRef.current, {
-            x: () => -scrollDistance,
-            ease: "none",
-            scrollTrigger: {
-              trigger: sectionRef.current,
-              start: "top top",
-              end: () => `+=${scrollDistance}`,
-              scrub: 1,
-              pin: true,
-              anticipatePin: 1,
-              invalidateOnRefresh: true,
-            },
-          });
-        }, 100);
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, [courses, loading]);
 
   const openCurriculum = (subject) => {
     const slug = subject.toLowerCase().replace(/\s+/g, "-");
@@ -167,99 +106,34 @@ const Courses = () => {
 
   if (loading)
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center text-4xl text-white">
-        Loading...
+      <div className="min-h-[400px] flex items-center justify-center">
+        <div className="w-10 h-10 border-2 border-white/10 border-t-white rounded-full animate-spin"></div>
       </div>
     );
-  if (courses.length === 0)
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center text-gray-400 text-2xl">
-        No courses yet.
-      </div>
-    );
+
+  if (!courses.length) return null;
 
   return (
-    <div className="relative w-full">
-      <section
-        id="courses"
-        ref={sectionRef}
-        className="relative min-h-screen overflow-hidden bg-linear-to-br from-[#151316] to-[#1a181b] pt-0 md:pt-24"
-      >
-        {/* Background spheres */}
-        <div className="absolute inset-0 overflow-hidden py-10">
-          <div
-            className="absolute -top-40 -left-40 w-80 h-80 rounded-full opacity-10 blur-xl"
-            style={{
-              background:
-                "linear-gradient(90deg,#D22D1E 37.08%,#963AB0 62.26%,#20469B 99.82%)",
-            }}
-          ></div>
-          <div
-            className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full opacity-5 blur-2xl"
-            style={{
-              background:
-                "linear-gradient(90deg,#20469B 37.08%,#D22D1E 62.26%,#963AB0 99.82%)",
-            }}
-          ></div>
+    <section id="courses" className="py-20 px-4 bg-[#0a0a0a]">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-16 text-center">
+          <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
+            OUR <span className="text-zinc-500">COURSES</span>
+          </h2>
+          <div className="w-20 h-1 bg-blue-600 mx-auto rounded-full"></div>
         </div>
 
-        <h2 className="absolute top-8 md:top-8 w-full text-center text-4xl md:text-7xl font-extrabold mb-8 text-white tracking-wide z-10">
-          OUR{" "}
-          <span
-            className="text-transparent bg-clip-text"
-            style={{
-              background:
-                "linear-gradient(90deg,#D22D1E 37.08%,#963AB0 62.26%,#20469B 99.82%)",
-              WebkitBackgroundClip: "text",
-            }}
-          >
-            COURSES
-          </span>
-        </h2>
-
-        {/* --- MOBILE/TABLET VIEW: CAROUSEL SLIDER --- */}
-        <div className="block lg:hidden w-full px-4 pt-32 pb-20">
-          <Carousel
-            responsive={responsive}
-            infinite={true}
-            autoPlay={false}
-            showDots={true}
-            arrows={false}
-            renderDotsOutside={true}
-            containerClass="pb-10" // Space for dots
-            itemClass="px-2" // Spacing between items
-          >
-            {courses.map((course, index) => (
-              <CourseCard
-                key={course._id}
-                course={course}
-                index={index}
-                openCurriculum={openCurriculum}
-                className="w-full"
-              />
-            ))}
-          </Carousel>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {courses.map((course) => (
+            <CourseCard
+              key={course._id}
+              course={course}
+              openCurriculum={openCurriculum}
+            />
+          ))}
         </div>
-
-        {/* --- DESKTOP VIEW: HORIZONTAL PINNED SCROLL --- */}
-        <div className="hidden lg:flex h-full items-center lg:h-screen w-full">
-          <div
-            ref={horizontalRef}
-            className="flex items-center justify-start space-x-5 px-8 w-full"
-          >
-            {courses.map((course, index) => (
-              <CourseCard
-                key={course._id}
-                course={course}
-                index={index}
-                openCurriculum={openCurriculum}
-                className="w-[28vw]"
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-    </div>
+      </div>
+    </section>
   );
 };
 

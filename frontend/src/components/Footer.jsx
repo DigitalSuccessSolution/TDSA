@@ -25,31 +25,32 @@ const Footer = () => {
             Empowering Students through innovation, data, and intelligence. Join
             us in redefining digital transformation.
           </p>
-          <div className="flex space-x-4 mt-4">
-            <a
-              href="#"
+          <div className="flex space-x-4 mt-4 items-center -center gap-3">
+        Checkout our linkedin page.   <a
+              href="https://www.linkedin.com/company/tdsacad"
               className="w-10 h-10 flex items-center justify-center rounded-full border border-white/10 hover:border-[#963AB0] hover:text-[#963AB0] transition-all"
             >
               <FaLinkedinIn />
+              
             </a>
-            <a
+            {/* <a
               href="#"
               className="w-10 h-10 flex items-center justify-center rounded-full border border-white/10 hover:border-[#20469B] hover:text-[#20469B] transition-all"
             >
               <FaTwitter />
-            </a>
-            <a
+            </a> */}
+            {/* <a
               href="#"
               className="w-10 h-10 flex items-center justify-center rounded-full border border-white/10 hover:border-[#D22D1E] hover:text-[#D22D1E] transition-all"
             >
               <FaInstagram />
-            </a>
-            <a
+            </a> */}
+            {/* <a
               href="#"
               className="w-10 h-10 flex items-center justify-center rounded-full border border-white/10 hover:border-[#963AB0] hover:text-[#963AB0] transition-all"
             >
               <FaYoutube />
-            </a>
+            </a> */}
           </div>
         </div>
 
@@ -66,11 +67,10 @@ const Footer = () => {
             </li>
             <li>
               <span className="text-white font-medium">Email:</span>{" "}
-              info@tdsa.ac.in
+           support@tdsacad.com
             </li>
             <li>
-              <span className="text-white font-medium">Phone:</span> +91 98765
-              43210
+              <span className="text-white font-medium">Phone:</span> +91  9755995529
             </li>
           </ul>
         </div>
@@ -93,19 +93,19 @@ const Footer = () => {
             <li>
               <HashLink
                 smooth
-                to="/#success"
+                to="/#courses"
                 className="hover:text-[#963AB0] transition-all"
               >
-                Success Stories
+                Courses
               </HashLink>
             </li>
             <li>
               <HashLink
                 smooth
-                to="/#contact"
+                to="/login"
                 className="hover:text-[#963AB0] transition-all"
               >
-                Contact
+                Get Started
               </HashLink>
             </li>
           </ul>

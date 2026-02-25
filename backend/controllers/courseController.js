@@ -15,6 +15,16 @@ exports.getAllCourses = async (req, res) => {
   }
 };
 
+exports.getCourseById = async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id);
+    if (!course) return res.status(404).json({ message: "Course not found" });
+    res.json(course);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 const getFileBuffer = (file) => file.buffer;
 
 // --- FIXED MENTOR LOGIC ---
@@ -52,7 +62,7 @@ const handleMentorsLogic = async (req, existingMentors = []) => {
 
       if (photoFile) {
         try {
-          photo = await uploadToCloudinary(getFileBuffer(photoFile));
+          photo = await uploadToCloudinary(photoFile);
         } catch (error) {
           console.error(`Error uploading photo for mentor ${i}:`, error);
         }
@@ -60,7 +70,7 @@ const handleMentorsLogic = async (req, existingMentors = []) => {
 
       // If faculty is kept, remove from deletion list
       const removeIndex = facultyCoursesToRemove.findIndex(
-        (id) => id && id.toString() === facultyId.toString()
+        (id) => id && id.toString() === facultyId.toString(),
       );
       if (removeIndex > -1) {
         facultyCoursesToRemove.splice(removeIndex, 1);
@@ -83,20 +93,20 @@ exports.createCourse = async (req, res) => {
     // Upload thumbnail
     const thumbnailFile = files.find((f) => f.fieldname === "thumbnail");
     if (thumbnailFile) {
-      thumbnail = await uploadToCloudinary(getFileBuffer(thumbnailFile));
+      thumbnail = await uploadToCloudinary(thumbnailFile);
     }
 
     // Upload brochure
     const brochureFile = files.find((f) => f.fieldname === "brochure");
     if (brochureFile) {
-      brochure = await uploadToCloudinary(getFileBuffer(brochureFile));
+      brochure = await uploadToCloudinary(brochureFile);
     }
 
     // NEW: Upload Roadmap Image
     let roadmapImage = "";
     const roadmapFile = files.find((f) => f.fieldname === "roadmapImage");
     if (roadmapFile) {
-      roadmapImage = await uploadToCloudinary(getFileBuffer(roadmapFile));
+      roadmapImage = await uploadToCloudinary(roadmapFile);
     }
 
     // NEW: Upload Skills Images
@@ -104,7 +114,7 @@ exports.createCourse = async (req, res) => {
     const skillsFiles = files.filter((f) => f.fieldname === "skillsImages");
     for (const file of skillsFiles) {
       try {
-        const url = await uploadToCloudinary(getFileBuffer(file));
+        const url = await uploadToCloudinary(file);
         skillsImages.push(url);
       } catch (error) {
         console.error("Error uploading skill image:", error);
@@ -134,6 +144,8 @@ exports.createCourse = async (req, res) => {
       brochure,
       roadmapImage, // NEW
       skillsImages, // NEW
+      mrpPrice: Number(req.body.mrpPrice) || 0, // NEW
+      finalPrice: Number(req.body.finalPrice) || 0, // NEW
       modules,
       reviews,
       mentors,
@@ -166,7 +178,7 @@ exports.createCourse = async (req, res) => {
           {
             type: "Course Created Successfully",
             courseName: courseName, // ✅ Fixed: Course Name ab dikhega
-          }
+          },
         );
 
         await sendEmail(req.user.email, "Course Created - TDSA", emailContent);
@@ -200,23 +212,19 @@ exports.updateCourse = async (req, res) => {
     // Handle thumbnail
     const thumbnailFile = files.find((f) => f.fieldname === "thumbnail");
     if (thumbnailFile) {
-      updates.thumbnail = await uploadToCloudinary(
-        getFileBuffer(thumbnailFile)
-      );
+      updates.thumbnail = await uploadToCloudinary(thumbnailFile);
     }
 
     // Handle brochure
     const brochureFile = files.find((f) => f.fieldname === "brochure");
     if (brochureFile) {
-      updates.brochure = await uploadToCloudinary(getFileBuffer(brochureFile));
+      updates.brochure = await uploadToCloudinary(brochureFile);
     }
 
     // NEW: Handle Roadmap Image
     const roadmapFile = files.find((f) => f.fieldname === "roadmapImage");
     if (roadmapFile) {
-      updates.roadmapImage = await uploadToCloudinary(
-        getFileBuffer(roadmapFile)
-      );
+      updates.roadmapImage = await uploadToCloudinary(roadmapFile);
     }
 
     // NEW: Handle Skills Images
@@ -249,7 +257,7 @@ exports.updateCourse = async (req, res) => {
     const skillsFiles = files.filter((f) => f.fieldname === "skillsImages");
     for (const file of skillsFiles) {
       try {
-        const url = await uploadToCloudinary(getFileBuffer(file));
+        const url = await uploadToCloudinary(file);
         newSkillsImages.push(url);
       } catch (error) {
         console.error("Error uploading skill image during update:", error);
@@ -280,7 +288,7 @@ exports.updateCourse = async (req, res) => {
     if (req.body.mentorsCount !== undefined) {
       const { mentors, facultyCourses } = await handleMentorsLogic(
         req,
-        courseToUpdate.mentors
+        courseToUpdate.mentors,
       );
       updates.mentors = mentors;
 

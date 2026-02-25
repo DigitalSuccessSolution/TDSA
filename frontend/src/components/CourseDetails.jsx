@@ -26,6 +26,7 @@ import {
   CheckCircle2,
   ArrowUpRight,
   MessageCircle,
+  CheckIcon,
 } from "lucide-react";
 import { useParams, useNavigate, Link, Links } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
@@ -39,6 +40,7 @@ const CourseCurriculum = () => {
   // States
   const [course, setCourse] = useState(null);
   const [activeModule, setActiveModule] = useState("");
+  const [selectedLectureId, setSelectedLectureId] = useState(null);
   const [expandedLectures, setExpandedLectures] = useState({});
   const [loading, setLoading] = useState(true);
 
@@ -149,9 +151,12 @@ const CourseCurriculum = () => {
   // --- API CALLS ---
   const checkEnrollmentStatus = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/enrollments`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/enrollments`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       if (res.ok) {
         const myEnrollments = await res.json();
         const enrolled = myEnrollments.some((enrollment) => {
@@ -173,13 +178,19 @@ const CourseCurriculum = () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/courses`);
       const courses = await res.json();
-      const decoded = decodeURIComponent(urlSlug.replace(/-/g, " "));
-      const found = courses.find(
-        (c) => c.subject.toLowerCase() === decoded.toLowerCase(),
-      );
+      // Robust matching: normalize both strings
+      const normalize = (str) => str.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const targetSlug = normalize(urlSlug);
+
+      const found = courses.find((c) => normalize(c.subject) === targetSlug);
       if (found) {
         setCourse(found);
-        if (found.modules.length > 0) setActiveModule(found.modules[0]._id);
+        if (found.modules.length > 0) {
+          setActiveModule(found.modules[0]._id);
+          if (found.modules[0].lectures.length > 0) {
+            setSelectedLectureId(found.modules[0].lectures[0]._id);
+          }
+        }
       }
     } catch (err) {
       console.error(err);
@@ -200,20 +211,30 @@ const CourseCurriculum = () => {
 
   const handleEnrollSubmit = async (e) => {
     e.preventDefault();
+
+    if (formData.phone.length !== 10) {
+      setErrorMessage("Please enter a valid 10-digit phone number.");
+      setSubmitStatus("error");
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/enrollments`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/enrollments`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            courseId: course._id,
+            phone: formData.phone,
+            message: formData.message,
+          }),
         },
-        body: JSON.stringify({
-          courseId: course._id,
-          phone: formData.phone,
-          message: formData.message,
-        }),
-      });
+      );
 
       const data = await res.json();
       if (res.ok) {
@@ -296,6 +317,76 @@ const CourseCurriculum = () => {
     return <LinkIcon size={20} />;
   };
 
+  const renderDemoVideo = (url) => {
+    if (!url) return null;
+
+    // Check if it's a direct video file
+    if (/\.(mp4|webm|ogg|mov)$/i.test(url)) {
+      return (
+        <video
+          src={url}
+          className="w-full h-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+        />
+      );
+    }
+
+    // Youtube Logic
+    if (url.includes("youtube.com/embed")) {
+      let src = url;
+      const separator = src.includes("?") ? "&" : "?";
+      // Try to get ID for playlist param (needed for loop)
+      let videoId = "";
+      try {
+        const parts = src.split("/embed/");
+        if (parts[1]) videoId = parts[1].split("?")[0];
+      } catch (e) {}
+
+      // Params to hide controls and autoplay
+      src = `${src}${separator}autoplay=1&mute=1&controls=0&loop=1&playlist=${videoId}&showinfo=0&modestbranding=1&rel=0&iv_load_policy=3&fs=0&disablekb=1`;
+
+      return (
+        <iframe
+          src={src}
+          className="w-full h-full object-cover pointer-events-none"
+          allowFullScreen
+          title="Demo"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        />
+      );
+    }
+
+    // Vimeo logic
+    if (url.includes("vimeo.com")) {
+      let src = url;
+      const separator = src.includes("?") ? "&" : "?";
+      src = `${src}${separator}background=1&autoplay=1&loop=1&byline=0&title=0`;
+      return (
+        <iframe
+          src={src}
+          className="w-full h-full object-cover pointer-events-none"
+          allowFullScreen
+          title="Demo"
+          allow="autoplay; fullscreen; picture-in-picture"
+        />
+      );
+    }
+
+    // Default Fallback
+    const separator = url.includes("?") ? "&" : "?";
+    return (
+      <iframe
+        src={`${url}${separator}autoplay=1&muted=1&controls=0`}
+        className="w-full h-full object-cover"
+        allowFullScreen
+        title="Demo"
+      />
+    );
+  };
+
   const renderStars = (
     currentRating,
     interactive = false,
@@ -306,14 +397,16 @@ const CourseCurriculum = () => {
       return (
         <Star
           key={i}
-          className={`w-5 h-5 transition-all duration-300 ${ratingValue <=
-              (interactive ? hoverStars || currentRating : currentRating)
+          className={`w-5 h-5 transition-all duration-300 ${
+            ratingValue <=
+            (interactive ? hoverStars || currentRating : currentRating)
               ? "text-yellow-500 fill-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]"
               : "text-zinc-600"
-            } ${interactive
+          } ${
+            interactive
               ? "cursor-pointer hover:scale-110 hover:text-yellow-400"
               : ""
-            }`}
+          }`}
           onClick={() => {
             if (interactive) {
               if (onClickHandler) onClickHandler(ratingValue);
@@ -384,1004 +477,1095 @@ const CourseCurriculum = () => {
             Back to Courses
           </span>
         </button>
+        {/* Course Header - Moved to Top */}
+        <div className="mb-8 md:mb-12 max-w-5xl animate-in fade-in slide-in-from-top-4 duration-700">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold mb-2 md:mb-1 bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent leading-[1.1] tracking-tight">
+            {course.subject}
+          </h1>
+          <p className="text-sm sm:text-base md:text-xl lg:text-xl text-zinc-400 leading-relaxed font-medium max-w-4xl px-1">
+            {course.description}
+          </p>
+        </div>
+
         {/* --- MAIN GRID --- */}
-        <div className="grid  lg:grid-cols-12 gap-4 lg:gap-12">
-          {/* LEFT SIDE: VIDEO & MODULE LIST (Span 7 cols) */}
-          <div className="lg:col-span-7 space-y-8">
-            {/* 1. Video Player */}
-            {course.demoVideo && (
+        <div className="space-y-8">
+          {/* TOP ROW: VIDEO & INFO (Stacked) */}
+          <div className="flex flex-col gap-6 md:gap-8">
+            {/* 1. Video Player - Full Width */}
+            <div className="w-full">
               <div
-                className={`rounded-[2rem] overflow-hidden shadow-2xl border border-white/5 relative group ${subtleGlow}`}
+                className={`rounded-2xl md:rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/5 relative group ${subtleGlow} aspect-video bg-zinc-900 max-h-[300px] md:max-h-[600px]`}
               >
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-40 pointer-events-none" />
-                <iframe
-                  src={course.demoVideo}
-                  className="w-full aspect-video"
-                  allowFullScreen
-                  title="Demo"
-                ></iframe>
-              </div>
-            )}
-
-            {/* 2. Module List */}
-            <div className={`${premiumCardClass} rounded-[2rem]`}>
-              <div className="p-6 border-b border-white/5 flex items-center gap-4 bg-white/[0.01]">
-                <div className="p-2.5 bg-black rounded-xl border border-white/10 shadow-inner text-pink-400">
-                  <BookOpen size={22} />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-white tracking-tight">
-                    Curriculum
-                  </h2>
-                  <p className="text-xs text-zinc-500 mt-0.5">
-                    {course.modules.length} Modules structured for success
-                  </p>
-                </div>
-              </div>
-
-              <div className="divide-y divide-white/5">
-                {course.modules.map((mod, i) => (
-                  <div
-                    key={mod._id}
-                    onClick={() => setActiveModule(mod._id)}
-                    className={`p-5 cursor-pointer transition-all duration-300 group ${activeModule === mod._id
-                        ? "bg-pink-500/5 border-l-[4px] border-l-pink-500"
-                        : "hover:bg-white/[0.02] border-l-[4px] border-l-transparent"
-                      }`}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div className="flex-1 pr-4">
-                        <div
-                          className={`text-xs font-bold uppercase tracking-wider mb-1.5 transition-colors ${activeModule === mod._id
-                              ? "text-pink-400"
-                              : "text-zinc-500 group-hover:text-pink-400"
-                            }`}
-                        >
-                          Module {i + 1}
-                        </div>
-                        <h3
-                          className={`text-lg font-semibold transition-colors leading-tight ${activeModule === mod._id
-                              ? "text-white"
-                              : "text-zinc-300 group-hover:text-white"
-                            }`}
-                        >
-                          {mod.title}
-                        </h3>
-                      </div>
-                      <div
-                        className={`p-1.5 rounded-full transition-all ${activeModule === mod._id
-                            ? "bg-pink-500/10 text-pink-400"
-                            : "text-zinc-600 group-hover:text-zinc-300"
-                          }`}
-                      >
-                        {activeModule === mod._id ? (
-                          <ChevronRight className="animate-pulse" size={20} />
-                        ) : (
-                          <ChevronRight size={20} />
-                        )}
-                      </div>
-                    </div>
+                {course.demoVideo ? (
+                  <>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-40 pointer-events-none z-10" />
+                    {renderDemoVideo(course.demoVideo)}
+                  </>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-zinc-600">No Preview Video</span>
                   </div>
-                ))}
+                )}
+              </div>
+            </div>
+
+            {/* 2. Course Meta & Rating Row - Professional Layout */}
+            <div className="flex flex-col lg:flex-row items-center justify-between px-1 md:px-4 mb-4 md:mb-8">
+              {/* Badges */}
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 md:gap-4 w-full lg:w-auto">
+                <div className="bg-zinc-800/50 backdrop-blur-md border border-white/10 px-4 md:px-6 py-2.5 md:py-3 rounded-xl md:rounded-2xl flex items-center gap-2.5 md:gap-3 text-xs md:text-sm font-semibold text-zinc-200 shadow-xl transition-all hover:border-pink-500/30">
+                  <Clock size={16} className="text-pink-500" />
+                  <span>{course.duration}</span>
+                </div>
+                <div className="bg-zinc-800/50 backdrop-blur-md border border-white/10 px-4 md:px-6 py-2.5 md:py-3 rounded-xl md:rounded-2xl flex items-center gap-2.5 md:gap-3 text-xs md:text-sm font-semibold text-zinc-200 shadow-xl transition-all hover:border-pink-500/30">
+                  <Award size={16} className="text-pink-500" />
+                  <span>{course.level}</span>
+                </div>
+              </div>
+
+              {/* Rating Component */}
+              <div className="flex items-center gap-4 md:gap-8 bg-zinc-900/40 backdrop-blur-xl border border-white/5 py-3 md:py-4 px-5 md:px-8 rounded-2xl md:rounded-[2rem] shadow-2xl w-full lg:w-auto justify-between lg:justify-start">
+                <div className="flex items-center gap-3 md:gap-4">
+                  <div className="text-3xl md:text-4xl font-black text-white tracking-tighter">
+                    {course.averageRating?.toFixed(1) || "0.0"}
+                  </div>
+                  <div className="flex flex-col">
+                    <div className="flex gap-0.5 mb-1">
+                      {renderStars(
+                        course.averageRating || 0,
+                        true,
+                        handleStarClick,
+                      )}
+                    </div>
+                    <span className="text-[9px] md:text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+                      {course.reviews?.length || 0} Reviews
+                    </span>
+                  </div>
+                </div>
+                <div className="h-10 w-px bg-white/10 hidden sm:block" />
+
+                {/* Pricing Display */}
+                {course.finalPrice > 0 && (
+                  <div className="flex flex-col items-end justify-center px-2">
+                    <div className="flex items-center gap-2">
+                      {course.mrpPrice > course.finalPrice && (
+                        <span className="text-zinc-500 line-through text-[11px] md:text-sm font-medium">
+                          ₹{course.mrpPrice}
+                        </span>
+                      )}
+                      <span className="text-white text-lg md:text-2xl font-black tracking-tight">
+                        ₹{course.finalPrice}
+                      </span>
+                    </div>
+                    {course.mrpPrice > course.finalPrice && (
+                      <div className="bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-md mt-0.5">
+                        <span className="text-[9px] md:text-[10px] font-black text-green-400 uppercase tracking-tighter">
+                          Save ₹{course.mrpPrice - course.finalPrice}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="relative group shrink-0">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full blur-md opacity-30 group-hover:opacity-70 transition duration-300"></div>
+                  {!isEnrolled ? (
+                    <button
+                      onClick={handleEnrollClick}
+                      className="relative px-5 md:px-10 py-2.5 md:py-4 rounded-full text-[11px] md:text-base font-extrabold bg-zinc-100 text-zinc-900 hover:bg-white transition-all active:scale-95 whitespace-nowrap shadow-xl"
+                    >
+                      Enroll Now
+                    </button>
+                  ) : (
+                    <Link
+                      to="/my-courses"
+                      className="relative px-5 md:px-10 py-2.5 md:py-4 rounded-full text-[11px] md:text-base font-extrabold bg-zinc-100 text-zinc-900 hover:bg-white transition-all active:scale-95 whitespace-nowrap shadow-xl flex items-center gap-2"
+                    >
+                      <GraduationCap size={18} className="text-pink-600" />
+                      <span>Go to Portal</span>
+                    </Link>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* RIGHT SIDE: DETAILS & LECTURE CONTENT (Span 5 cols) */}
-          <div className="lg:col-span-5 space-y-8 lg:sticky lg:top-8 h-fit self-start">
-            {/* 1. Course Info Header */}
-            <div className={`${premiumCardClass} rounded-[2rem] p-8`}>
-              <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/5 blur-[80px] rounded-full pointer-events-none mix-blend-screen" />
-
-              <h1 className="text-3xl lg:text-4xl font-extrabold mb-6 bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent leading-[1.15] tracking-tight">
-                {course.subject}
-              </h1>
-
-              <div className="flex flex-wrap gap-3 mb-8">
-                <span className="bg-black/50 backdrop-blur-md border border-white/5 px-4 py-2.5 rounded-full flex items-center gap-2.5 text-xs font-medium text-zinc-300 transition-all hover:bg-zinc-800 hover:border-pink-500/20 shadow-sm">
-                  <Clock size={15} className="text-pink-400" />
-                  <span>{course.duration}</span>
-                </span>
-                <span className="bg-black/50 backdrop-blur-md border border-white/5 px-4 py-2.5 rounded-full flex items-center gap-2.5 text-xs font-medium text-zinc-300 transition-all hover:bg-zinc-800 hover:border-pink-500/20 shadow-sm">
-                  <Award size={15} className="text-pink-400" />
-                  <span>{course.level}</span>
-                </span>
-              </div>
-
-              {/* Rating Box */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-black/20 rounded-2xl p-5 border border-white/5 shadow-inner gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="text-4xl font-bold text-white tracking-tighter">
-                    {course.averageRating?.toFixed(1) || "0.0"}
-                  </div>
-                  <div className="flex flex-col justify-center">
-                    <div className="flex gap-0.5 mb-1.5">
-                      {renderStars(course.averageRating || 0, false)}
-                    </div>
-                    <span className="text-xs text-zinc-500 font-medium">
-                      Based on {course.reviews?.length || 0} reviews
-                    </span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleStarClick(0)}
-                  className="w-full sm:w-auto px-4 py-2 rounded-full text-xs font-semibold text-zinc-300 hover:text-white border border-white/10 hover:border-pink-500/30 hover:bg-pink-500/5 transition-all"
-                >
-                  Write Review
-                </button>
+          {/* BOTTOM ROW: MODULES (Tabs) & LECTURES (Master-Detail) */}
+          <div className="space-y-6">
+            {/* 1. Module Tabs (Scrollable) */}
+            <div className="relative">
+              <div className="flex overflow-x-auto py-4 px-10 gap-3 scrollbar-hide snap-x">
+                {course.modules.map((mod, i) => (
+                  <button
+                    key={mod._id}
+                    onClick={() => {
+                      setActiveModule(mod._id);
+                      if (mod.lectures.length > 0) {
+                        setSelectedLectureId(mod.lectures[0]._id);
+                      } else {
+                        setSelectedLectureId(null);
+                      }
+                    }}
+                    className={`flex-shrink-0 px-6 py-3 rounded-xl border text-sm font-bold tracking-wide transition-all duration-300 whitespace-nowrap snap-center ${
+                      activeModule === mod._id
+                        ? "bg-pink-500 text-white border-pink-500 shadow-[0_0_20px_rgba(236,72,153,0.3)] scale-105"
+                        : "bg-zinc-900/50 text-zinc-500 border-white/5 hover:border-white/20 hover:text-zinc-300"
+                    }`}
+                  >
+                    MODULE {i + 1}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* 2. Lecture List */}
+            {/* 2. Content Area */}
             {currentModule && (
-              <div className={`${premiumCardClass} rounded-[2rem] h-fit`}>
-                <div className="p-6 border-b border-white/5 bg-white/[0.01] flex items-center gap-3">
-                  <div className="h-2.5 w-2.5 rounded-full bg-pink-500 shadow-[0_0_10px_rgba(236,72,153,0.6)] animate-pulse" />
-                  <h2 className="text-lg font-bold text-white leading-tight">
-                    {currentModule.title}
-                  </h2>
+              <div
+                className={`flex flex-col lg:grid lg:grid-cols-12 gap-8 lg:gap-24 items-start animate-in fade-in slide-in-from-bottom-4 duration-500`}
+              >
+                {/* LEFT: Lecture List (Selector) */}
+                <div className="w-full lg:col-span-4 flex flex-col gap-2 lg:border-r border-white/5 lg:pr-6 h-full">
+                  <div className="px-2 md:px-4 py-3 text-xs font-extrabold text-zinc-500 uppercase tracking-widest mb-1 flex items-center justify-between">
+                    <span className="truncate pr-2">{currentModule.title}</span>
+                    <span className="shrink-0 text-[10px] bg-pink-500/10 border border-pink-500/20 px-2 py-0.5 rounded text-pink-300">
+                      {currentModule.lectures.length} Lectures
+                    </span>
+                  </div>
+                  <div className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0 scrollbar-hide px-1">
+                    {currentModule.lectures.map((lec, i) => (
+                      <button
+                        key={lec._id}
+                        onClick={() => setSelectedLectureId(lec._id)}
+                        className={`shrink-0 lg:shrink text-left p-3 md:p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 group relative overflow-hidden min-w-[200px] lg:min-w-0 ${
+                          selectedLectureId === lec._id
+                            ? "bg-white/5 border-pink-500/50 text-white shadow-lg"
+                            : "bg-zinc-900/40 border-white/5 text-zinc-500 hover:bg-zinc-900 hover:border-white/10 hover:text-zinc-300"
+                        }`}
+                      >
+                        {/* Active Indicator */}
+                        {selectedLectureId === lec._id && (
+                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-pink-500" />
+                        )}
+
+                        <div
+                          className={`flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-colors ${
+                            selectedLectureId === lec._id
+                              ? "bg-green-500 text-white"
+                              : "bg-black/50 text-zinc-600 group-hover:text-zinc-400"
+                          }`}
+                        >
+                          {selectedLectureId === lec._id ? (
+                            <CheckIcon className="w-4 h-4" />
+                          ) : (
+                            <span className="text-xs font-bold">{i + 1}</span>
+                          )}
+                        </div>
+
+                        <span className="text-sm font-medium line-clamp-2">
+                          {lec.title}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="max-h-[500px] overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-track-transparent scrollbar-thumb-zinc-700 hover:scrollbar-thumb-pink-500/50">
-                  {currentModule.lectures.map((lec, i) => {
-                    const open = expandedLectures[lec._id];
-                    return (
-                      <div
-                        key={lec._id}
-                        className="border-b border-white/5 last:border-b-0 transition-colors duration-300 hover:bg-white/[0.02]"
-                      >
-                        <div
-                          className={`p-5 flex justify-between items-center cursor-pointer group ${open ? "bg-white/[0.02]" : ""
-                            }`}
-                          onClick={() => toggleLecture(lec._id)}
-                        >
-                          <div className="flex items-center gap-4 flex-1 pr-4">
-                            <div
-                              className={`p-1 rounded-lg transition-all duration-300 ${open
-                                  ? "bg-pink-500/10 text-pink-400 rotate-90"
-                                  : "text-zinc-600 group-hover:text-zinc-400"
-                                }`}
-                            >
-                              <ChevronRight size={16} />
-                            </div>
+                {/* RIGHT: Active Lecture Details */}
+                <div className="w-full lg:col-span-8 lg:sticky lg:top-24">
+                  {(() => {
+                    const activeLec = currentModule.lectures.find(
+                      (l) => l._id === selectedLectureId,
+                    );
+                    if (!activeLec)
+                      return (
+                        <div className="h-full min-h-[300px] rounded-3xl border border-white/5 bg-zinc-900/20 flex flex-col items-center justify-center text-zinc-600 gap-3">
+                          <FileText
+                            size={40}
+                            strokeWidth={1}
+                            className="opacity-50"
+                          />
+                          <p>Select a lecture from the left to view details</p>
+                        </div>
+                      );
 
+                    return (
+                      <div key={activeLec._id} className="h-full flex flex-col">
+                        {/* Header - Minimal, no huge padding */}
+                        <div className="mb-6 bg-zinc-900/40 p-4 md:p-6 rounded-2xl border border-white/5 backdrop-blur-sm">
+                          {/* <div className="flex items-center gap-3 mb-2">
+                            <span className="text-pink-400 font-bold text-[9px] md:text-[10px] tracking-wider uppercase">
+                              Lecture{" "}
+                              {currentModule.lectures.findIndex(
+                                (l) => l._id === activeLec._id,
+                              ) + 1}
+                            </span>
+                            <div className="h-px flex-1 bg-white/10" />
+                          </div> */}
+                          <h2 className="text-xl md:text-2xl font-bold text-white leading-tight">
+                            {activeLec.title}
+                          </h2>
+                        </div>
+
+                        {/* Content Body - Compact List */}
+                        <div className="flex-1 space-y-5 mb-8 bg-zinc-900/20 p-4 md:p-6 rounded-2xl border border-white/5">
+                          <div className="flex items-center gap-2 text-zinc-400 text-[10px] md:text-xs font-bold uppercase tracking-wide">
+                            <Zap size={14} className="text-yellow-500" />
+                            <span>Topics Covered</span>
+                          </div> 
+
+                          {activeLec.content && activeLec.content.length > 0 ? (
+                            <ul className="grid sm:grid-cols-2 gap-3">
+                              {activeLec.content.map((item, idx) => (
+                                <li
+                                  key={idx}
+                                  className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-pink-500/20 transition-all duration-300"
+                                >
+                                  <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-pink-500 shrink-0 shadow-[0_0_8px_rgba(236,72,153,0.5)]" />
+                                  <p className="text-zinc-300 text-xs md:text-sm leading-snug">
+                                    {typeof item === "string"
+                                      ? item
+                                      : item.text}
+                                  </p>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-zinc-600 text-sm italic py-4">
+                              No specific topics listed.
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Compact Footer Action */}
+                        <div className="mt-auto pt-6 border-t border-white/5 flex flex-wrap items-center justify-between gap-4">
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="text-zinc-500">Status:</span>
                             <span
-                              className={`text-sm font-medium transition-colors ${open
-                                  ? "text-pink-300"
-                                  : "text-zinc-300 group-hover:text-white"
-                                }`}
+                              className={`font-medium flex items-center gap-1.5 ${isEnrolled ? "text-green-400" : "text-zinc-400"}`}
                             >
-                              <span className="opacity-50 mr-2 text-zinc-500">
-                                {i + 1}.
-                              </span>{" "}
-                              {lec.title}
+                              {isEnrolled ? (
+                                <CheckCircle2 size={14} />
+                              ) : (
+                                <Lock size={14} />
+                              )}
+                              {isEnrolled ? "Unlocked" : "Locked"}
                             </span>
                           </div>
 
                           <button
-                            onClick={(e) => handleJoinClass(e, lec)}
-                            className={`flex items-center justify-center w-9 h-9 rounded-xl border transition-all duration-300 shadow-lg ${isEnrolled
-                                ? "bg-gradient-to-br from-pink-600 to-purple-700 border-transparent text-white hover:scale-105 shadow-[0_4px_15px_rgba(236,72,153,0.2)]"
-                                : "bg-black border-zinc-800 text-zinc-600 hover:border-pink-500/50 hover:text-pink-400"
-                              }`}
-                            title={
-                              isEnrolled ? "Start Learning" : "Locked Content"
-                            }
+                            onClick={(e) => handleJoinClass(e, activeLec)}
+                            className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-bold text-sm transition-all shadow-md ${
+                              isEnrolled
+                                ? "bg-white text-black hover:bg-zinc-200 active:scale-95"
+                                : "bg-zinc-800 text-zinc-100  cursor-pointer"
+                            }`}
                           >
                             {isEnrolled ? (
-                              <PlayCircle size={16} fill="currentColor" />
+                              <>
+                                <PlayCircle
+                                  size={16}
+                                  className="text-pink-600"
+                                />
+                                <span>Start Watching</span>
+                              </>
                             ) : (
-                              <Lock size={14} />
+                              <span>Enroll to Access</span>
                             )}
                           </button>
                         </div>
-
-                        {/* Accordion Content */}
-                        <div
-                          className={`grid transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${open
-                              ? "grid-rows-[1fr] opacity-100"
-                              : "grid-rows-[0fr] opacity-0"
-                            }`}
-                        >
-                          <div className="overflow-hidden">
-                            <div className="px-6 pb-6 pl-[4.5rem] pt-2">
-                              {lec.content && lec.content.length > 0 ? (
-                                <ul className="space-y-3 relative before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-[1px] before:bg-gradient-to-b before:from-pink-500/30 before:to-transparent">
-                                  {lec.content.map((item, idx) => (
-                                    <li
-                                      key={idx}
-                                      className="flex items-start gap-3 text-zinc-400 text-sm leading-relaxed group"
-                                    >
-                                      <div className="mt-[3px] shrink-0 flex items-center justify-center w-4 h-4 rounded-full bg-pink-500/10 border border-pink-500/30 text-pink-400 group-hover:bg-pink-500/20 transition-colors">
-                                        <CheckCircle
-                                          size={10}
-                                          strokeWidth={3}
-                                        />
-                                      </div>
-                                      <span className="group-hover:text-zinc-200 transition-colors">
-                                        {typeof item === "string"
-                                          ? item
-                                          : item.text}
-                                      </span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              ) : (
-                                <div className="text-zinc-600 text-xs italic pl-4 border-l border-white/5 py-2">
-                                  This lecture has no additional details yet.
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
                       </div>
                     );
-                  })}
+                  })()}
                 </div>
               </div>
             )}
           </div>
-        </div>
-        {/* --- END MAIN GRID --- */}
+          {/* --- END MAIN GRID --- */}
 
-        {/* --- NEW SECTION: PROGRAM HIGHLIGHTS (MENTORSHIP / PLACEMENT / PATH) --- */}
-        <div className="mt-16 md:mt-32 grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-8 px-0 md:px-4">
-          {[
-            {
-              title: "1:1 Mentorship",
-              icon: Users,
-              // Purple Theme
-              colorClass: "text-purple-400",
-              bgClass: "bg-purple-500/10",
-              borderClass: "border-purple-500/20",
-              glowClass: "from-purple-500/20",
-              desc: [
-                "Exclusive mentorship with industry experts",
-                "Work on industry projects under guidance",
-              ],
-            },
-            {
-              title: "Placements Assistance",
-              icon: Briefcase,
-              // Pink Theme
-              colorClass: "text-pink-400",
-              bgClass: "bg-pink-500/10",
-              borderClass: "border-pink-500/20",
-              glowClass: "from-pink-500/20",
-              desc: [
-                "Build your profile & resume",
-                "Prepare for placements through mock interviews",
-              ],
-            },
-            {
-              title: "Personalised Learning Path",
-              icon: Zap,
-              // Light Red Theme
-              colorClass: "text-red-400",
-              bgClass: "bg-red-500/10",
-              borderClass: "border-red-500/20",
-              glowClass: "from-red-500/20",
-              desc: [
-                "Cutting edge & industry relevant curriculum",
-                "Master 22+ tools and frameworks",
-              ],
-            },
-            {
-              title: "Instant Doubt Support",
-              icon: MessageCircle,
-              // Cyan Theme
-              colorClass: "text-cyan-400",
-              bgClass: "bg-cyan-500/10",
-              borderClass: "border-cyan-500/20",
-              glowClass: "from-cyan-500/20",
-              desc: [
-                "Unlimited doubt clearing sessions",
-                "Support via chat & audio call",
-              ],
-            },
-          ].map((item, i) => (
-            <div
-              key={i}
-              className="group relative p-3 md:p-5 rounded-lg md:rounded-[2rem] border border-white/5 bg-zinc-900/20 backdrop-blur-sm overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:bg-zinc-900/60 hover:shadow-2xl hover:shadow-black/50"
-            >
-              {/* Subtle Top Gradient for Depth (Neutral White/Zinc) */}
-              <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
+          {/* --- NEW SECTION: PROGRAM HIGHLIGHTS (MENTORSHIP / PLACEMENT / PATH) --- */}
+          <div className="mt-16 md:mt-32 grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-8 px-0 md:px-4">
+            {[
+              {
+                title: "1:1 Mentorship",
+                icon: Users,
+                // Purple Theme
+                colorClass: "text-purple-400",
+                bgClass: "bg-purple-500/10",
+                borderClass: "border-purple-500/20",
+                glowClass: "from-purple-500/20",
+                desc: [
+                  "Exclusive mentorship with industry experts",
+                  "Work on industry projects under guidance",
+                ],
+              },
+              {
+                title: "Placements Assistance",
+                icon: Briefcase,
+                // Pink Theme
+                colorClass: "text-pink-400",
+                bgClass: "bg-pink-500/10",
+                borderClass: "border-pink-500/20",
+                glowClass: "from-pink-500/20",
+                desc: [
+                  "Build your profile & resume",
+                  "Prepare for placements through mock interviews",
+                ],
+              },
+              {
+                title: "Personalised Learning Path",
+                icon: Zap,
+                // Light Red Theme
+                colorClass: "text-red-400",
+                bgClass: "bg-red-500/10",
+                borderClass: "border-red-500/20",
+                glowClass: "from-red-500/20",
+                desc: [
+                  "Cutting edge & industry relevant curriculum",
+                  "Master 22+ tools and frameworks",
+                ],
+              },
+              {
+                title: "Instant Doubt Support",
+                icon: MessageCircle,
+                // Cyan Theme
+                colorClass: "text-cyan-400",
+                bgClass: "bg-cyan-500/10",
+                borderClass: "border-cyan-500/20",
+                glowClass: "from-cyan-500/20",
+                desc: [
+                  "Unlimited doubt clearing sessions",
+                  "Support via chat & audio call",
+                ],
+              },
+            ].map((item, i) => (
+              <div
+                key={i}
+                className="group relative p-3 md:p-5 rounded-lg md:rounded-[2rem] border border-white/5 bg-zinc-900/20 backdrop-blur-sm overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:bg-zinc-900/60 hover:shadow-2xl hover:shadow-black/50"
+              >
+                {/* Subtle Top Gradient for Depth (Neutral White/Zinc) */}
+                <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
 
-              {/* Icon Container */}
-              <div className="relative w-12 md:w-16 h-12 md:h-16 mb-2 md:mb-8">
-                {/* Dynamic Glow behind Icon */}
-                <div
-                  className={`absolute inset-0 blur-2xl rounded-full bg-gradient-to-br ${item.glowClass} to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
-                />
-
-                <div
-                  className={`relative w-full h-full rounded-2xl bg-zinc-950 border border-white/10 flex items-center justify-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] group-hover:scale-110 transition-transform duration-500`}
-                >
-                  <item.icon
-                    size={25}
-                    className={`${item.colorClass} transition-colors duration-300 drop-shadow-md`}
-                    strokeWidth={1.5}
+                {/* Icon Container */}
+                <div className="relative w-12 md:w-16 h-12 md:h-16 mb-2 md:mb-8">
+                  {/* Dynamic Glow behind Icon */}
+                  <div
+                    className={`absolute inset-0 blur-2xl rounded-full bg-gradient-to-br ${item.glowClass} to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
                   />
+
+                  <div
+                    className={`relative w-full h-full rounded-2xl bg-zinc-950 border border-white/10 flex items-center justify-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] group-hover:scale-110 transition-transform duration-500`}
+                  >
+                    <item.icon
+                      size={25}
+                      className={`${item.colorClass} transition-colors duration-300 drop-shadow-md`}
+                      strokeWidth={1.5}
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* Content */}
-              <div className="relative z-10">
-                <h3 className="text-lg md:text-xl font-bold text-zinc-100 mb-1 md:mb-6 group-hover:text-white transition-colors">
-                  {item.title}
-                </h3>
+                {/* Content */}
+                <div className="relative z-10">
+                  <h3 className="text-lg md:text-xl font-bold text-zinc-100 mb-1 md:mb-6 group-hover:text-white transition-colors">
+                    {item.title}
+                  </h3>
 
-                <ul className="space-y-2 md:space-y-4">
-                  {item.desc.map((d, idx) => (
-                    <li
-                      key={idx}
-                      className="flex items-start gap-3 text-zinc-400 text-sm leading-relaxed group/item"
-                    >
-                      {/* Custom Check Bullet Point matching the card theme */}
-                      <div
-                        className={`mt-1 shrink-0 w-5 h-5 rounded-full ${item.bgClass} flex items-center justify-center border ${item.borderClass} transition-colors`}
+                  <ul className="space-y-2 md:space-y-4">
+                    {item.desc.map((d, idx) => (
+                      <li
+                        key={idx}
+                        className="flex items-start gap-3 text-zinc-400 text-sm leading-relaxed group/item"
                       >
-                        <Check
-                          size={10}
-                          className={item.colorClass}
-                          strokeWidth={3}
-                        />
-                      </div>
-                      <span className="group-hover:text-zinc-300 text-[10px] md:text-sm transition-colors duration-300">
-                        {d}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* --- FULL WIDTH SECTIONS --- */}
-
-        {/* 1. SKILLS SECTION */}
-        {course.skillsImages && course.skillsImages.length > 0 && (
-          <div className="mt-16 lg:mt-24 relative py-10 lg:py-24">
-            <div className="text-center mb-10">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-pink-500/10 border border-pink-500/20 text-pink-300 text-xs font-bold uppercase tracking-wider mb-4">
-                <Sparkles size={14} /> Technical Arsenal
-              </div>
-              <h2 className="text-3xl font-bold text-white">
-                Skills You Will Master
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
-              {course.skillsImages.map((img, i) => (
-                <div
-                  key={i}
-                  className="group relative h-20 w-20 lg:h-32 lg:w-32 bg-white rounded-2xl border border-white/5 hover:border-pink-500/30 transition-all duration-300 flex items-center justify-center aspect-square shadow-lg overflow-hidden backdrop-blur-sm"
-                >
-                  <img
-                    src={img}
-                    alt={`Skill ${i + 1}`}
-                    className="h-full w-full object-contain filter drop-shadow-md group-hover:scale-110 transition-transform duration-300 relative z-10"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* --- NEW SECTION: CERTIFICATE OF COMPLETION --- */}
-        <div className="mt-16 lg:mt-24 py-10 lg:py-24 bg-gradient-to-r from-zinc-900 to-black border border-white/10 rounded-2xl  md:rounded-[2rem] p-6 md:p-12 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-10">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-pink-500/5 blur-[100px] rounded-full pointer-events-none" />
-
-          {/* Left Text */}
-          <div className="max-w-xl z-10">
-            <h2 className="text-xl md:text-4xl font-bold text-white mb-0 md:mb-4">
-              Certificate of Completion
-            </h2>
-            <p className="text-zinc-400 text-sm md:text-lg mb-2 md:mb-8 leading-relaxed">
-              Get Certified by the platform and share your achievement with the
-              world.
-            </p>
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 md:gap-4">
-                <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-pink-500">
-                  <Award size={20} />
-                </div>
-                <span className="text-white font-medium text-sm md:text-lg">
-                  Earn your Certificate
-                </span>
-              </div>
-              <div className="flex items-center gap-2 md:gap-4">
-                <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-pink-500">
-                  <ShieldCheck size={20} />
-                </div>
-                <span className="text-white font-medium text-sm md:text-lg">
-                  Share your Achievement
-                </span>
-              </div>
-            </div>
-            <button
-              onClick={handleEnrollClick}
-              className="mt-5 md:mt-10 px-8 py-3 rounded-lg border border-white/20 text-white font-semibold hover:bg-white hover:text-black transition-all"
-            >
-              Enroll Now
-            </button>
-          </div>
-
-          {/* Right Image Placeholder (Certificate Visual) */}
-          <div className="relative z-10 w-full max-w-md transition-transform duration-500">
-            {/* You can replace this src with your specific certificate image URL */}
-            <div className="bg-zinc-800 aspect-[4/3] rounded-xl shadow-2xl  flex items-center justify-center overflow-hidden">
-              <img src="/certificate.jpeg" alt="Certificate" />
-            </div>
-          </div>
-        </div>
-
-        {/* 2. PLACEMENT PARTNERS (DUAL MARQUEE) */}
-        {placementCompanies.length > 0 && (
-          <div className="mt-16 lg:mt-24 py-10 lg:py-24 bg-transparent relative overflow-hidden">
-            <div className="text-center mb-16 relative z-10 px-4">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-bold uppercase tracking-wider mb-4">
-                <Award size={14} /> Career Impact
-              </div>
-              <h2 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
-                Our Alumni Work at{" "}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">
-                  Top Companies
-                </span>
-              </h2>
-            </div>
-            <div className="absolute top-0 left-0 w-12 md:w-32 h-full bg-gradient-to-r from-black via-black/80 to-transparent z-10 pointer-events-none" />
-            <div className="absolute top-0 right-0 w-12 md:w-32 h-full bg-gradient-to-l from-black via-black/80 to-transparent z-10 pointer-events-none" />
-            <div className="flex flex-col gap-12 w-full overflow-hidden">
-              <div className="marquee-container w-full overflow-hidden">
-                <div className="flex items-center gap-4 md:gap-24 animate-marquee-left w-max py-2">
-                  {[...firstRowCompanies, ...firstRowCompanies].map(
-                    (company, index) => (
-                      <div
-                        key={`r1-${index}`}
-                        className="group flex flex-col items-center justify-center gap-4 cursor-pointer"
-                      >
-                        <div className="h-12 md:h-16 bg-white p-2 w-32 md:w-40 flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:-translate-y-1">
-                          <img
-                            src={company.logo}
-                            alt={company.name}
-                            className="w-full h-full object-contain "
+                        {/* Custom Check Bullet Point matching the card theme */}
+                        <div
+                          className={`mt-1 shrink-0 w-5 h-5 rounded-full ${item.bgClass} flex items-center justify-center border ${item.borderClass} transition-colors`}
+                        >
+                          <Check
+                            size={10}
+                            className={item.colorClass}
+                            strokeWidth={3}
                           />
                         </div>
-                      </div>
-                    ),
-                  )}
+                        <span className="group-hover:text-zinc-300 text-[10px] md:text-sm transition-colors duration-300">
+                          {d}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               </div>
-              <div className="marquee-container w-full overflow-hidden">
-                <div className="flex items-center gap-4 md:gap-24 animate-marquee-right w-max py-2">
-                  {[...secondRowCompanies, ...secondRowCompanies].map(
-                    (company, index) => (
-                      <div
-                        key={`r2-${index}`}
-                        className="group flex flex-col items-center justify-center gap-4 cursor-pointer"
-                      >
-                        <div className="h-12 md:h-16 bg-white p-2 w-32 md:w-40 flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:-translate-y-1">
-                          <img
-                            src={company.logo}
-                            alt={company.name}
-                            className="w-full h-full object-contain "
-                          />
-                        </div>
-                      </div>
-                    ),
-                  )}
+            ))}
+          </div>
+
+          {/* --- FULL WIDTH SECTIONS --- */}
+
+          {/* 1. SKILLS SECTION */}
+          {course.skillsImages && course.skillsImages.length > 0 && (
+            <div className="mt-16 lg:mt-24 relative py-10 lg:py-24">
+              <div className="text-center mb-10">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-pink-500/10 border border-pink-500/20 text-pink-300 text-xs font-bold uppercase tracking-wider mb-4">
+                  <Sparkles size={14} /> Technical Arsenal
                 </div>
+                <h2 className="text-3xl font-bold text-white">
+                  Skills You Will Master
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+                {course.skillsImages.map((img, i) => (
+                  <div
+                    key={i}
+                    className="group relative h-20 w-20 lg:h-32 lg:w-32 bg-white rounded-2xl border border-white/5 hover:border-pink-500/30 transition-all duration-300 flex items-center justify-center aspect-square shadow-lg overflow-hidden backdrop-blur-sm"
+                  >
+                    <img
+                      src={img}
+                      alt={`Skill ${i + 1}`}
+                      className="h-full w-full object-contain filter drop-shadow-md group-hover:scale-110 transition-transform duration-300 relative z-10"
+                    />
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* 3. ROADMAP SECTION */}
-        {course.roadmapImage && (
-          <div className="mt-16 lg:mt-24">
-            <div className="text-center mb-10 max-w-3xl mx-auto px-4">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-pink-500/10 border  text-pink-300 text-xs font-bold uppercase tracking-wider mb-4">
-                <Map size={14} /> The Journey Forward
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                Your Detailed Learning Path
+          {/* --- NEW SECTION: CERTIFICATE OF COMPLETION --- */}
+          <div className="mt-16 lg:mt-24 py-10 lg:py-24 bg-gradient-to-r from-zinc-900 to-black border border-white/10 rounded-2xl  md:rounded-[2rem] p-6 md:p-12 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-10">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-pink-500/5 blur-[100px] rounded-full pointer-events-none" />
+
+            {/* Left Text */}
+            <div className="max-w-xl z-10">
+              <h2 className="text-xl md:text-4xl font-bold text-white mb-0 md:mb-4">
+                Certificate of Completion
               </h2>
-              <p className="text-zinc-400 text-sm md:text-base leading-relaxed">
-                Follow this structured timeline designed to take you from
-                beginner to advanced. Click the visual below to view it in full
-                detail.
+              <p className="text-zinc-400 text-sm md:text-lg mb-2 md:mb-8 leading-relaxed">
+                Get Certified by the platform and share your achievement with
+                the world.
               </p>
-            </div>
-
-            <div
-              className="w-full cursor-pointer mt-8 px-4 md:px-0"
-              onClick={() => setShowRoadmap(true)}
-            >
-              <img
-                src={course.roadmapImage}
-                alt="Detailed Roadmap"
-                className="w-full h-auto object-cover "
-              />
-            </div>
-          </div>
-        )}
-
-        {/* 4. ENROLLMENT CTA (Responsive Update) */}
-        <div className="mt-10 md:mt-28 text-center pb-5 md:pb-12 px-4">
-          {!isEnrolled ? (
-            <div className="relative inline-block w-full sm:w-auto group z-10">
-              <div className="absolute -inset-px bg-gradient-to-r from-pink-600 via-purple-600 to-pink-600 rounded-full blur-md opacity-40 group-hover:opacity-60 transition duration-500 group-hover:duration-200 animate-pulse-slow"></div>
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 md:gap-4">
+                  <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-pink-500">
+                    <Award size={20} />
+                  </div>
+                  <span className="text-white font-medium text-sm md:text-lg">
+                    Earn your Certificate
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 md:gap-4">
+                  <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-pink-500">
+                    <ShieldCheck size={20} />
+                  </div>
+                  <span className="text-white font-medium text-sm md:text-lg">
+                    Share your Achievement
+                  </span>
+                </div>
+              </div>
               <button
                 onClick={handleEnrollClick}
-                className="relative w-full sm:w-auto px-10 md:px-24 py-3 md:py-6 text-sm md:text-xl font-extrabold tracking-wide rounded-full bg-zinc-100 text-zinc-900 transition-all shadow-xl active:scale-[0.98] hover:bg-white"
+                className="mt-5 md:mt-10 px-8 py-3 rounded-lg border border-white/20 text-white font-semibold hover:bg-white hover:text-black transition-all"
               >
                 Enroll Now
               </button>
             </div>
-          ) : (
-            <Link
-              to="/my-courses"
-              className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-3 px-10 md:px-16 py-5 text-lg font-bold rounded-full bg-zinc-800 border border-pink-500/30 text-white overflow-hidden transition-all hover:border-pink-500/60 hover:shadow-[0_0_25px_rgba(236,72,153,0.2)]"
-            >
-              <span className="absolute inset-0 bg-gradient-to-r from-pink-600/10 to-purple-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <GraduationCap
-                size={20}
-                className="text-pink-400 group-hover:text-white transition-colors"
-              />
-              <span className="relative z-10">Go to Student Portal</span>
-            </Link>
-          )}
-        </div>
 
-        {/* 5. MENTORS */}
-        {course.mentors?.length > 0 && (
-          <div className="mt-16 lg:mt-24 pt-16 border-t border-white/5 relative">
-            <div className="text-center mb-12">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-pink-500/10 border border-pink-500/20 text-pink-300 text-xs font-bold uppercase tracking-wider mb-4">
-                <Users size={14} /> Mentorship
+            {/* Right Image Placeholder (Certificate Visual) */}
+            <div className="relative z-10 w-full max-w-md transition-transform duration-500">
+              {/* You can replace this src with your specific certificate image URL */}
+              <div className="bg-[#000000] aspect-[4/3] rounded-xl shadow-2xl  flex items-center justify-center overflow-hidden">
+                <img src="/certificate.jpeg" alt="Certificate" />
               </div>
-              <h2 className="text-2xl md:text-4xl font-bold text-white">
-                Guided by Industry Experts
-              </h2>
-            </div>
-
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {course.mentors.map((mentor, index) => (
-                <div
-                  key={index}
-                  className="bg-zinc-800/40 rounded-[2rem] p-8 border border-white/5 text-center hover:border-pink-500/30 transition duration-500 group relative overflow-hidden shadow-lg backdrop-blur-sm"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-pink-900/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-                  <div className="w-28 h-28 mx-auto rounded-full p-1 bg-gradient-to-br from-white/10 to-white/5 mb-6 relative z-10 group-hover:from-pink-500/30 group-hover:to-purple-500/30 transition-colors duration-500">
-                    <div className="w-full h-full rounded-full overflow-hidden bg-black border border-white/10 relative">
-                      {mentor.photo ? (
-                        <img
-                          src={mentor.photo}
-                          alt={mentor.name}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-white/5">
-                          <User
-                            size={40}
-                            className="text-zinc-600 group-hover:text-pink-400 transition-colors"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <h3 className="text-xl font-bold text-white group-hover:text-pink-300 transition-colors mb-2 relative z-10">
-                    {mentor.name || "Mentor Name"}
-                  </h3>
-                  <p className="text-sm text-pink-400/80 font-medium uppercase tracking-wider relative z-10">
-                    {mentor.designation || "Lead Instructor"}
-                  </p>
-                </div>
-              ))}
             </div>
           </div>
-        )}
 
-        {/* --- NEW SECTION: MONEY BACK GUARANTEE --- */}
-        <div className="w-full max-w-6xl mx-auto mt-16 lg:mt-24 mb-10 px-0 md:px-4">
-          {/* Main Container with Zinc Glass Effect */}
-          <div className="relative bg-zinc-950 rounded-[2rem] border border-zinc-800 p-6 md:p-12 overflow-hidden group">
-            {/* Ambient Zinc Background Gradients (Subtle) */}
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-zinc-800/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-zinc-900/40 rounded-full blur-[80px] pointer-events-none" />
-
-            <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6 md:gap-12">
-              {/* Left Content */}
-              <div className="flex-1 w-full">
-                {/* Header */}
-                <div className="mb-4 md:mb-8">
-                  <span className="inline-block py-1 px-3 rounded-full bg-zinc-900 border border-zinc-700 text-zinc-400 text-[10px] md:text-xs font-medium tracking-widest uppercase mb-3">
-                    Placement Protection
+          {/* 2. PLACEMENT PARTNERS (DUAL MARQUEE) */}
+          {placementCompanies.length > 0 && (
+            <div className="mt-16 lg:mt-24 py-10 lg:py-24 bg-transparent relative overflow-hidden">
+              <div className="text-center mb-16 relative z-10 px-4">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-bold uppercase tracking-wider mb-4">
+                  <Award size={14} /> Career Impact
+                </div>
+                <h2 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
+                  Our Alumni Work at{" "}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">
+                    Top Companies
                   </span>
-                  <h3 className="text-2xl md:text-4xl font-bold text-white leading-tight">
-                    Money Back Guarantee & <br />
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-zinc-200 via-zinc-400 to-zinc-600">
-                      Career Assurance
-                    </span>
-                  </h3>
-                </div>
-
-                {/* Premium List Design */}
-                <div className="space-y-5">
-                  {/* Point 1 */}
-                  <div className="flex items-start gap-4 pb-5 border-b border-zinc-800/60 last:border-0 last:pb-0">
-                    <div className="shrink-0 mt-1">
-                      <CheckCircle2
-                        className="
-                  w-6 h-6 text-zinc-100 fill-pink-900"
-                      />
-                      {/* Agar icon nahi hai to use: <span className="text-xl text-white">✔</span> */}
-                    </div>
-                    <div>
-                      <h4 className="text-zinc-100 font-semibold text-lg">
-                        Full Fees Refund
-                      </h4>
-                      <p className="text-zinc-500 text-sm mt-0 md:mt-1 leading-relaxed">
-                        Zero risk. If you don't get placed within 6 months, we
-                        refund 100% of your fee.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Point 2 */}
-                  <div className="flex items-start gap-4 pb-5 border-b border-zinc-800/60 last:border-0 last:pb-0">
-                    <div className="shrink-0 mt-1">
-                      <CheckCircle2
-                        className="
-                   w-6 h-6 text-zinc-100 fill-pink-900"
-                      />
-                    </div>
-                    <div>
-                      <h4 className="text-zinc-100 font-semibold text-lg">
-                        Paid Internship Opportunities
-                      </h4>
-                      <p className="text-zinc-500 text-sm mt-0 md:mt-1 leading-relaxed">
-                        Direct entry into professional environments immediately
-                        after course completion.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Point 3 */}
-                  <div className="flex items-start gap-4 pb-5 border-b border-zinc-800/60 last:border-0 last:pb-0">
-                    <div className="shrink-0 mt-1">
-                      <CheckCircle2
-                        className="
-                   w-6 h-6 text-zinc-100 fill-pink-900"
-                      />
-                    </div>
-                    <div>
-                      <h4 className="text-zinc-100 font-semibold text-lg">
-                        Live Project Experience
-                      </h4>
-                      <p className="text-zinc-500 text-sm mt-0 md:mt-1 leading-relaxed">
-                        Don't just learn syntax. Build real-world applications
-                        deployed for actual users.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Point 4 */}
-                  <div className="flex items-start gap-4 pb-5 border-b border-zinc-800/60 last:border-0 last:pb-0">
-                    <div className="shrink-0 mt-1">
-                      <CheckCircle2
-                        className="
-                   w-6 h-6 text-zinc-100 fill-pink-900"
-                      />
-                    </div>
-                    <div>
-                      <h4 className="text-zinc-100 font-semibold text-lg">
-                        Regular Doubt Sessions
-                      </h4>
-                      <p className="text-zinc-500 text-sm mt-0 md:mt-1 leading-relaxed">
-                        Continuous mentor support to ensure no concept remains
-                        unclear.
-                      </p>
-                    </div>
+                </h2>
+              </div>
+              <div className="absolute top-0 left-0 w-12 md:w-32 h-full bg-gradient-to-r from-black via-black/80 to-transparent z-10 pointer-events-none" />
+              <div className="absolute top-0 right-0 w-12 md:w-32 h-full bg-gradient-to-l from-black via-black/80 to-transparent z-10 pointer-events-none" />
+              <div className="flex flex-col gap-12 w-full overflow-hidden">
+                <div className="marquee-container w-full overflow-hidden">
+                  <div className="flex items-center gap-4 md:gap-24 animate-marquee-left w-max py-2">
+                    {[...firstRowCompanies, ...firstRowCompanies].map(
+                      (company, index) => (
+                        <div
+                          key={`r1-${index}`}
+                          className="group flex flex-col items-center justify-center gap-4 cursor-pointer"
+                        >
+                          <div className="h-12 md:h-16 bg-white p-2 w-32 md:w-40 flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:-translate-y-1">
+                            <img
+                              src={company.logo}
+                              alt={company.name}
+                              className="w-full h-full object-contain "
+                            />
+                          </div>
+                        </div>
+                      ),
+                    )}
                   </div>
                 </div>
-
-                {/* Footer Link */}
-                <div className="mt-8 pt-4 border-t border-dashed border-zinc-800 flex items-center gap-2 text-zinc-500 text-xs md:text-sm group/link">
-                  <span>Read detailed Terms & Conditions</span>
-                  <a
-                    href={"/terms-of-service"}
-                    className="flex items-center gap-1 text-zinc-300 cursor-pointer group-hover/link:text-white transition-colors"
-                  >
-                    Click here <ArrowUpRight className="w-3 h-3" />
-                  </a>
+                <div className="marquee-container w-full overflow-hidden">
+                  <div className="flex items-center gap-4 md:gap-24 animate-marquee-right w-max py-2">
+                    {[...secondRowCompanies, ...secondRowCompanies].map(
+                      (company, index) => (
+                        <div
+                          key={`r2-${index}`}
+                          className="group flex flex-col items-center justify-center gap-4 cursor-pointer"
+                        >
+                          <div className="h-12 md:h-16 bg-white p-2 w-32 md:w-40 flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:-translate-y-1">
+                            <img
+                              src={company.logo}
+                              alt={company.name}
+                              className="w-full h-full object-contain "
+                            />
+                          </div>
+                        </div>
+                      ),
+                    )}
+                  </div>
                 </div>
               </div>
+            </div>
+          )}
 
-              {/* Right Image Section with Zinc/Gold Glow */}
-              <div className="shrink-0 relative mt-8 lg:mt-0 mx-auto lg:mx-0">
-                {/* Glow behind image - thoda Gold rakha hai kyuki 'Money Back' highlight hona chahiye */}
-                <div className="absolute inset-0 bg-yellow-500/10 blur-3xl rounded-full" />
-                <div className="absolute inset-0 bg-zinc-500/10 blur-3xl rounded-full translate-x-4 translate-y-4" />
+          {/* 3. ROADMAP SECTION */}
+          {course.roadmapImage && (
+            <div className="mt-16 lg:mt-24">
+              <div className="text-center mb-10 max-w-3xl mx-auto px-4">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-pink-500/10 border  text-pink-300 text-xs font-bold uppercase tracking-wider mb-4">
+                  <Map size={14} /> The Journey Forward
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                  Your Detailed Learning Path
+                </h2>
+                <p className="text-zinc-400 text-sm md:text-base leading-relaxed">
+                  Follow this structured timeline designed to take you from
+                  beginner to advanced. Click the visual below to view it in
+                  full detail.
+                </p>
+              </div>
 
+              <div
+                className="w-full cursor-pointer mt-8 px-4 md:px-0"
+                onClick={() => setShowRoadmap(true)}
+              >
                 <img
-                  src="/guaranty.png"
-                  alt="Money back guarantee"
-                  className="relative w-48 md:w-64 h-auto object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500 ease-out"
+                  src={course.roadmapImage}
+                  alt="Detailed Roadmap"
+                  className="w-full h-auto object-cover "
                 />
               </div>
             </div>
-          </div>
-        </div>
+          )}
 
-        {/* 6. REVIEWS */}
-        {course.reviews?.length > 0 && (
-          <div className="mt-12 mb-16">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-white">
-                What Our Students Say
-              </h2>
-            </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {course.reviews.map((rev) => (
-                <div
-                  key={rev._id}
-                  className="bg-zinc-800/40 backdrop-blur-md rounded-[1.5rem] p-8 border border-white/5 hover:border-white/10 hover:bg-zinc-800/60 transition duration-300 shadow-lg relative overflow-hidden"
+          {/* 4. ENROLLMENT CTA (Responsive Update) */}
+          <div className="mt-10 md:mt-28 text-center pb-5 md:pb-12 px-4">
+            {!isEnrolled ? (
+              <div className="relative inline-block w-full sm:w-auto group z-10">
+                <div className="absolute -inset-px bg-gradient-to-r from-pink-600 via-purple-600 to-pink-600 rounded-full blur-md opacity-40 group-hover:opacity-60 transition duration-500 group-hover:duration-200 animate-pulse-slow"></div>
+                <button
+                  onClick={handleEnrollClick}
+                  className="relative w-full sm:w-auto px-10 md:px-24 py-3 md:py-6 text-sm md:text-xl font-extrabold tracking-wide rounded-full bg-zinc-100 text-zinc-900 transition-all shadow-xl active:scale-[0.98] hover:bg-white"
                 >
-                  <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-pink-500/20 to-transparent" />
+                  Enroll Now
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/my-courses"
+                className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-3 px-10 md:px-16 py-5 text-lg font-bold rounded-full bg-zinc-800 border border-pink-500/30 text-white overflow-hidden transition-all hover:border-pink-500/60 hover:shadow-[0_0_25px_rgba(236,72,153,0.2)]"
+              >
+                <span className="absolute inset-0 bg-gradient-to-r from-pink-600/10 to-purple-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <GraduationCap
+                  size={20}
+                  className="text-pink-400 group-hover:text-white transition-colors"
+                />
+                <span className="relative z-10">Go to Student Portal</span>
+              </Link>
+            )}
+          </div>
 
-                  <div className="flex justify-between items-start mb-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-zinc-800 to-black border border-white/10 flex items-center justify-center text-base font-bold text-pink-300 shadow-inner">
-                        {rev.name.charAt(0)}
+          {/* 5. MENTORS */}
+          {course.mentors?.length > 0 && (
+            <div className="mt-16 lg:mt-24 pt-16 border-t border-white/5 relative">
+              <div className="text-center mb-12">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-pink-500/10 border border-pink-500/20 text-pink-300 text-xs font-bold uppercase tracking-wider mb-4">
+                  <Users size={14} /> Mentorship
+                </div>
+                <h2 className="text-2xl md:text-4xl font-bold text-white">
+                  Guided by Industry Experts
+                </h2>
+              </div>
+
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {course.mentors.map((mentor, index) => (
+                  <div
+                    key={index}
+                    className="bg-zinc-800/40 rounded-[2rem] p-8 border border-white/5 text-center hover:border-pink-500/30 transition duration-500 group relative overflow-hidden shadow-lg backdrop-blur-sm"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-pink-900/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                    <div className="w-28 h-28 mx-auto rounded-full p-1 bg-gradient-to-br from-white/10 to-white/5 mb-6 relative z-10 group-hover:from-pink-500/30 group-hover:to-purple-500/30 transition-colors duration-500">
+                      <div className="w-full h-full rounded-full overflow-hidden bg-black border border-white/10 relative">
+                        {mentor.photo ? (
+                          <img
+                            src={mentor.photo}
+                            alt={mentor.name}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-white/5">
+                            <User
+                              size={40}
+                              className="text-zinc-600 group-hover:text-pink-400 transition-colors"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <h3 className="text-xl font-bold text-white group-hover:text-pink-300 transition-colors mb-2 relative z-10">
+                      {mentor.name || "Mentor Name"}
+                    </h3>
+                    <p className="text-sm text-pink-400/80 font-medium uppercase tracking-wider relative z-10">
+                      {mentor.designation || "Lead Instructor"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* --- NEW SECTION: MONEY BACK GUARANTEE --- */}
+          <div className="w-full max-w-6xl mx-auto mt-16 lg:mt-24 mb-10 px-0 md:px-4">
+            {/* Main Container with Zinc Glass Effect */}
+            <div className="relative bg-zinc-950 rounded-[2rem] border border-zinc-800 p-6 md:p-12 overflow-hidden group">
+              {/* Ambient Zinc Background Gradients (Subtle) */}
+              <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-zinc-800/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-zinc-900/40 rounded-full blur-[80px] pointer-events-none" />
+
+              <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6 md:gap-12">
+                {/* Left Content */}
+                <div className="flex-1 w-full">
+                  {/* Header */}
+                  <div className="mb-4 md:mb-8">
+                    <span className="inline-block py-1 px-3 rounded-full bg-zinc-900 border border-zinc-700 text-zinc-400 text-[10px] md:text-xs font-medium tracking-widest uppercase mb-3">
+                      Placement Protection
+                    </span>
+                    <h3 className="text-2xl md:text-4xl font-bold text-white leading-tight">
+                      Money Back Guarantee & <br />
+                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-zinc-200 via-zinc-400 to-zinc-600">
+                        Career Assurance
+                      </span>
+                    </h3>
+                  </div>
+
+                  {/* Premium List Design */}
+                  <div className="space-y-5">
+                    {/* Point 1 */}
+                    <div className="flex items-start gap-4 pb-5 border-b border-zinc-800/60 last:border-0 last:pb-0">
+                      <div className="shrink-0 mt-1">
+                        <CheckCircle2
+                          className="
+                  w-6 h-6 text-zinc-100 fill-pink-900"
+                        />
+                        {/* Agar icon nahi hai to use: <span className="text-xl text-white">✔</span> */}
                       </div>
                       <div>
-                        <h4 className="font-bold text-base text-white leading-tight">
-                          {rev.name}
+                        <h4 className="text-zinc-100 font-semibold text-lg">
+                          Full Fees Refund
                         </h4>
-                        <p className="text-zinc-500 text-xs mt-1 font-medium">
-                          {new Date(rev.date).toLocaleDateString()}
+                        <p className="text-zinc-500 text-sm mt-0 md:mt-1 leading-relaxed">
+                          Zero risk. If you don't get placed within 6 months, we
+                          refund 100% of your fee.
                         </p>
                       </div>
                     </div>
-                    <div className="flex gap-1">{renderStars(rev.rating)}</div>
+
+                    {/* Point 2 */}
+                    <div className="flex items-start gap-4 pb-5 border-b border-zinc-800/60 last:border-0 last:pb-0">
+                      <div className="shrink-0 mt-1">
+                        <CheckCircle2
+                          className="
+                   w-6 h-6 text-zinc-100 fill-pink-900"
+                        />
+                      </div>
+                      <div>
+                        <h4 className="text-zinc-100 font-semibold text-lg">
+                          Paid Internship Opportunities
+                        </h4>
+                        <p className="text-zinc-500 text-sm mt-0 md:mt-1 leading-relaxed">
+                          Direct entry into professional environments
+                          immediately after course completion.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Point 3 */}
+                    <div className="flex items-start gap-4 pb-5 border-b border-zinc-800/60 last:border-0 last:pb-0">
+                      <div className="shrink-0 mt-1">
+                        <CheckCircle2
+                          className="
+                   w-6 h-6 text-zinc-100 fill-pink-900"
+                        />
+                      </div>
+                      <div>
+                        <h4 className="text-zinc-100 font-semibold text-lg">
+                          Live Project Experience
+                        </h4>
+                        <p className="text-zinc-500 text-sm mt-0 md:mt-1 leading-relaxed">
+                          Don't just learn syntax. Build real-world applications
+                          deployed for actual users.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Point 4 */}
+                    <div className="flex items-start gap-4 pb-5 border-b border-zinc-800/60 last:border-0 last:pb-0">
+                      <div className="shrink-0 mt-1">
+                        <CheckCircle2
+                          className="
+                   w-6 h-6 text-zinc-100 fill-pink-900"
+                        />
+                      </div>
+                      <div>
+                        <h4 className="text-zinc-100 font-semibold text-lg">
+                          Regular Doubt Sessions
+                        </h4>
+                        <p className="text-zinc-500 text-sm mt-0 md:mt-1 leading-relaxed">
+                          Continuous mentor support to ensure no concept remains
+                          unclear.
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-zinc-300 text-sm leading-relaxed font-light">
-                    "{rev.comment}"
-                  </p>
+
+                  {/* Footer Link */}
+                  <div className="mt-8 pt-4 border-t border-dashed border-zinc-800 flex items-center gap-2 text-zinc-500 text-xs md:text-sm group/link">
+                    <span>Read detailed Terms & Conditions</span>
+                    <a
+                      href={"/terms-of-service"}
+                      className="flex items-center gap-1 text-zinc-300 cursor-pointer group-hover/link:text-white transition-colors"
+                    >
+                      Click here <ArrowUpRight className="w-3 h-3" />
+                    </a>
+                  </div>
                 </div>
-              ))}
+
+                {/* Right Image Section with Zinc/Gold Glow */}
+                <div className="shrink-0 relative mt-8 lg:mt-0 mx-auto lg:mx-0">
+                  {/* Glow behind image - thoda Gold rakha hai kyuki 'Money Back' highlight hona chahiye */}
+                  <div className="absolute inset-0 bg-yellow-500/10 blur-3xl rounded-full" />
+                  <div className="absolute inset-0 bg-zinc-500/10 blur-3xl rounded-full translate-x-4 translate-y-4" />
+
+                  <img
+                    src="/guaranty.png"
+                    alt="Money back guarantee"
+                    className="relative w-48 md:w-64 h-auto object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500 ease-out"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 6. REVIEWS */}
+          <div className="mt-12 mb-16">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">
+                What Our Students Say
+              </h2>
+              <div className="flex flex-col items-center gap-3">
+                <p className="text-zinc-400 text-sm font-medium">
+                  Click any star to share your experience
+                </p>
+                <div className="flex gap-2 p-3 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-sm">
+                  {renderStars(0, true, handleStarClick)}
+                </div>
+              </div>
+            </div>
+            {course.reviews?.length > 0 ? (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {course.reviews.map((rev) => (
+                  <div
+                    key={rev._id}
+                    className="bg-zinc-800/40 backdrop-blur-md rounded-[1.5rem] p-8 border border-white/5 hover:border-white/10 hover:bg-zinc-800/60 transition duration-300 shadow-lg relative overflow-hidden"
+                  >
+                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-pink-500/20 to-transparent" />
+
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-zinc-800 to-black border border-white/10 flex items-center justify-center text-base font-bold text-pink-300 shadow-inner">
+                          {rev.name.charAt(0)}
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-base text-white leading-tight">
+                            {rev.name}
+                          </h4>
+                          <p className="text-zinc-500 text-xs mt-1 font-medium">
+                            {new Date(rev.date).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div
+                        className="flex gap-1"
+                        onClick={() => handleStarClick(rev.rating)}
+                      >
+                        {renderStars(rev.rating, true, handleStarClick)}
+                      </div>
+                    </div>
+                    <p className="text-zinc-300 text-sm leading-relaxed font-light">
+                      "{rev.comment}"
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20 bg-zinc-900/20 border border-white/5 rounded-[2rem] border-dashed">
+                <MessageCircle
+                  size={40}
+                  className="mx-auto text-zinc-700 mb-4 opacity-50"
+                />
+                <p className="text-zinc-500 font-medium tracking-wide">
+                  No reviews yet. Be the first to share your journey!
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* --- MODALS --- */}
+
+        {/* 1. LINKS POPUP */}
+        {activeLectureLinks && (
+          <div className="fixed inset-0 bg-zinc-950/90 backdrop-blur-lg flex items-center justify-center z-50 p-6">
+            <div
+              className={`${premiumCardClass} rounded-3xl max-w-md w-full p-8 animate-in fade-in zoom-in-95 duration-300 border-pink-500/20 bg-black`}
+            >
+              <button
+                onClick={() => setActiveLectureLinks(null)}
+                className="absolute top-6 right-6 text-zinc-500 hover:text-white transition-colors p-1 bg-white/5 rounded-full hover:bg-white/10"
+              >
+                <X size={20} />
+              </button>
+              <h3 className="text-2xl font-bold text-white mb-2 pr-8 leading-tight">
+                {activeLectureLinks.title}
+              </h3>
+              <p className="text-pink-400 text-xs font-bold uppercase tracking-widest mb-8 flex items-center gap-2">
+                <FileText size={14} /> Class Resources
+              </p>
+              <div className="space-y-4">
+                {activeLectureLinks.lectureLinks &&
+                activeLectureLinks.lectureLinks.length > 0 ? (
+                  activeLectureLinks.lectureLinks.map((link, idx) => (
+                    <a
+                      key={idx}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-5 p-5 rounded-2xl bg-zinc-800/50 border border-white/5 hover:border-pink-500/30 hover:bg-zinc-800 transition-all group relative overflow-hidden"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="p-3.5 rounded-xl bg-black border border-white/10 text-pink-400 group-hover:text-pink-300 group-hover:scale-110 transition-all shadow-inner relative z-10">
+                        {getLinkIcon(link.type)}
+                      </div>
+                      <div className="flex-1 relative z-10">
+                        <p className="text-sm font-bold text-zinc-200 group-hover:text-white transition-colors">
+                          {link.type || "Resource Link"}
+                        </p>
+                        <p className="text-[11px] text-zinc-500 flex items-center gap-1.5 mt-1.5 font-medium uppercase tracking-wide group-hover:text-pink-400 transition-colors">
+                          Open Resource <ExternalLink size={11} />
+                        </p>
+                      </div>
+                    </a>
+                  ))
+                ) : (
+                  <div className="text-center py-10 text-zinc-500 bg-white/5 rounded-2xl border border-white/5 border-dashed text-sm font-medium">
+                    <p>No resources attached to this lecture.</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
-      </div>
 
-      {/* --- MODALS --- */}
-
-      {/* 1. LINKS POPUP */}
-      {activeLectureLinks && (
-        <div className="fixed inset-0 bg-zinc-950/90 backdrop-blur-lg flex items-center justify-center z-50 p-6">
-          <div
-            className={`${premiumCardClass} rounded-3xl max-w-md w-full p-8 animate-in fade-in zoom-in-95 duration-300 border-pink-500/20 bg-black`}
-          >
-            <button
-              onClick={() => setActiveLectureLinks(null)}
-              className="absolute top-6 right-6 text-zinc-500 hover:text-white transition-colors p-1 bg-white/5 rounded-full hover:bg-white/10"
+        {/* 2. ENROLL FORM */}
+        {showEnrollForm && (
+          <div className="fixed inset-0 bg-zinc-950/90 backdrop-blur-lg flex items-center justify-center z-50 p-6">
+            <div
+              className={`${premiumCardClass} rounded-3xl max-w-lg w-full p-10 animate-in fade-in zoom-in-95 duration-300 border-pink-500/30 bg-black`}
             >
-              <X size={20} />
-            </button>
-            <h3 className="text-2xl font-bold text-white mb-2 pr-8 leading-tight">
-              {activeLectureLinks.title}
-            </h3>
-            <p className="text-pink-400 text-xs font-bold uppercase tracking-widest mb-8 flex items-center gap-2">
-              <FileText size={14} /> Class Resources
-            </p>
-            <div className="space-y-4">
-              {activeLectureLinks.lectureLinks &&
-                activeLectureLinks.lectureLinks.length > 0 ? (
-                activeLectureLinks.lectureLinks.map((link, idx) => (
-                  <a
-                    key={idx}
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-5 p-5 rounded-2xl bg-zinc-800/50 border border-white/5 hover:border-pink-500/30 hover:bg-zinc-800 transition-all group relative overflow-hidden"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <div className="p-3.5 rounded-xl bg-black border border-white/10 text-pink-400 group-hover:text-pink-300 group-hover:scale-110 transition-all shadow-inner relative z-10">
-                      {getLinkIcon(link.type)}
-                    </div>
-                    <div className="flex-1 relative z-10">
-                      <p className="text-sm font-bold text-zinc-200 group-hover:text-white transition-colors">
-                        {link.type || "Resource Link"}
-                      </p>
-                      <p className="text-[11px] text-zinc-500 flex items-center gap-1.5 mt-1.5 font-medium uppercase tracking-wide group-hover:text-pink-400 transition-colors">
-                        Open Resource <ExternalLink size={11} />
-                      </p>
-                    </div>
-                  </a>
-                ))
-              ) : (
-                <div className="text-center py-10 text-zinc-500 bg-white/5 rounded-2xl border border-white/5 border-dashed text-sm font-medium">
-                  <p>No resources attached to this lecture.</p>
+              <button
+                onClick={() => setShowEnrollForm(false)}
+                className="absolute top-6 right-6 text-zinc-500 hover:text-white transition-colors p-1 bg-white/5 rounded-full hover:bg-white/10"
+              >
+                <X size={20} />
+              </button>
+              <div className="text-center mb-8">
+                <p className="text-pink-400 text-xs font-bold uppercase tracking-widest mb-2">
+                  Start Your Journey
+                </p>
+                <h2 className="text-3xl font-extrabold text-white leading-tight">
+                  Enroll in{" "}
+                  <span className="bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
+                    {course.subject}
+                  </span>
+                </h2>
+              </div>
+
+              <form onSubmit={handleEnrollSubmit} className="space-y-5">
+                <div className="space-y-5">
+                  <div className="relative">
+                    <User
+                      size={18}
+                      className="absolute top-1/2 -translate-y-1/2 left-5 text-zinc-600"
+                    />
+                    <input
+                      type="text"
+                      disabled
+                      value={formData.name}
+                      className="w-full pl-12 pr-5 py-4 bg-zinc-800/50 border border-white/10 rounded-xl text-zinc-400 font-medium cursor-not-allowed text-sm"
+                    />
+                  </div>
+                  <div className="relative">
+                    <FileText
+                      size={18}
+                      className="absolute top-1/2 -translate-y-1/2 left-5 text-zinc-600"
+                    />
+                    <input
+                      type="email"
+                      disabled
+                      value={formData.email}
+                      className="w-full pl-12 pr-5 py-4 bg-zinc-800/50 border border-white/10 rounded-xl text-zinc-400 font-medium cursor-not-allowed text-sm"
+                    />
+                  </div>
                 </div>
-              )}
+                <div className="space-y-5 pt-2">
+                  <input
+                    type="tel"
+                    placeholder="Your Phone Number"
+                    required
+                    value={formData.phone}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, "");
+                      if (value.length <= 10) {
+                        setFormData({ ...formData, phone: value });
+                      }
+                    }}
+                    className="w-full px-6 py-4 bg-zinc-950 border border-white/20 rounded-xl text-white placeholder:text-zinc-600 focus:border-pink-500 focus:ring-1 focus:ring-pink-500 outline-none transition-all text-sm font-medium shadow-inner"
+                  />
+                  <textarea
+                    rows="3"
+                    placeholder="Message (Optional)"
+                    value={formData.message}
+                    onChange={(e) =>
+                      setFormData({ ...formData, message: e.target.value })
+                    }
+                    className="w-full px-6 py-4 bg-zinc-950 border border-white/20 rounded-xl text-white placeholder:text-zinc-600 focus:border-pink-500 focus:ring-1 focus:ring-pink-500 outline-none transition-all text-sm font-medium resize-none shadow-inner"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full py-5 cursor-pointer mt-4 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white rounded-xl text-lg font-bold transition-all shadow-xl disabled:opacity-50 disabled:shadow-none active:scale-[0.98]"
+                >
+                  {submitting ? "Processing..." : "Secure My Spot Now"}
+                </button>
+
+                {submitStatus === "error" && (
+                  <p className="text-red-400 text-center text-sm font-medium mt-3 bg-red-500/10 py-2 rounded-lg border border-red-500/20">
+                    {errorMessage}
+                  </p>
+                )}
+              </form>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* 2. ENROLL FORM */}
-      {showEnrollForm && (
-        <div className="fixed inset-0 bg-zinc-950/90 backdrop-blur-lg flex items-center justify-center z-50 p-6">
-          <div
-            className={`${premiumCardClass} rounded-3xl max-w-lg w-full p-10 animate-in fade-in zoom-in-95 duration-300 border-pink-500/30 bg-black`}
-          >
-            <button
-              onClick={() => setShowEnrollForm(false)}
-              className="absolute top-6 right-6 text-zinc-500 hover:text-white transition-colors p-1 bg-white/5 rounded-full hover:bg-white/10"
+        {/* 3. REVIEW MODAL */}
+        {showReviewModal && (
+          <div className="fixed inset-0 bg-zinc-950/90 backdrop-blur-lg flex justify-center items-center z-50 p-6">
+            <div
+              className={`${premiumCardClass} rounded-3xl p-10 max-w-md w-full animate-in fade-in zoom-in-95 duration-300 bg-black`}
             >
-              <X size={20} />
-            </button>
-            <div className="text-center mb-8">
-              <p className="text-pink-400 text-xs font-bold uppercase tracking-widest mb-2">
-                Start Your Journey
-              </p>
-              <h2 className="text-3xl font-extrabold text-white leading-tight">
-                Enroll in{" "}
-                <span className="bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
-                  {course.subject}
-                </span>
+              <button
+                onClick={() => {
+                  setShowReviewModal(false);
+                  setReviewData({ name: "", rating: 0, comment: "" });
+                  setHoverStars(0);
+                }}
+                className="absolute top-6 right-6 text-zinc-500 hover:text-white transition-colors p-1 bg-white/5 rounded-full hover:bg-white/10"
+              >
+                <X size={20} />
+              </button>
+              <h2 className="text-2xl font-bold text-center mb-8 text-white leading-tight">
+                Share Your Experience
               </h2>
-            </div>
-
-            <form onSubmit={handleEnrollSubmit} className="space-y-5">
-              <div className="space-y-5">
-                <div className="relative">
-                  <User
-                    size={18}
-                    className="absolute top-1/2 -translate-y-1/2 left-5 text-zinc-600"
-                  />
-                  <input
-                    type="text"
-                    disabled
-                    value={formData.name}
-                    className="w-full pl-12 pr-5 py-4 bg-zinc-800/50 border border-white/10 rounded-xl text-zinc-400 font-medium cursor-not-allowed text-sm"
-                  />
-                </div>
-                <div className="relative">
-                  <FileText
-                    size={18}
-                    className="absolute top-1/2 -translate-y-1/2 left-5 text-zinc-600"
-                  />
-                  <input
-                    type="email"
-                    disabled
-                    value={formData.email}
-                    className="w-full pl-12 pr-5 py-4 bg-zinc-800/50 border border-white/10 rounded-xl text-zinc-400 font-medium cursor-not-allowed text-sm"
-                  />
-                </div>
-              </div>
-              <div className="space-y-5 pt-2">
+              <form onSubmit={submitReview} className="space-y-6">
                 <input
-                  type="tel"
-                  placeholder="Your Phone Number"
+                  type="text"
+                  placeholder="Your Name"
+                  value={reviewData.name}
+                  onChange={(e) =>
+                    setReviewData({ ...reviewData, name: e.target.value })
+                  }
+                  className="w-full px-6 py-4 bg-zinc-950 border border-white/20 rounded-xl text-white placeholder:text-zinc-600 focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-all text-sm font-medium shadow-inner"
                   required
-                  value={formData.phone}
-                  onChange={(e) =>
-                    setFormData({ ...formData, phone: e.target.value })
-                  }
-                  className="w-full px-6 py-4 bg-zinc-950 border border-white/20 rounded-xl text-white placeholder:text-zinc-600 focus:border-pink-500 focus:ring-1 focus:ring-pink-500 outline-none transition-all text-sm font-medium shadow-inner"
                 />
-                <textarea
-                  rows="3"
-                  placeholder="Message (Optional)"
-                  value={formData.message}
-                  onChange={(e) =>
-                    setFormData({ ...formData, message: e.target.value })
-                  }
-                  className="w-full px-6 py-4 bg-zinc-950 border border-white/20 rounded-xl text-white placeholder:text-zinc-600 focus:border-pink-500 focus:ring-1 focus:ring-pink-500 outline-none transition-all text-sm font-medium resize-none shadow-inner"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full py-5 mt-4 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white rounded-xl text-lg font-bold transition-all shadow-xl disabled:opacity-50 disabled:shadow-none active:scale-[0.98]"
-              >
-                {submitting ? "Processing..." : "Secure My Spot Now"}
-              </button>
-
-              {submitStatus === "error" && (
-                <p className="text-red-400 text-center text-sm font-medium mt-3 bg-red-500/10 py-2 rounded-lg border border-red-500/20">
-                  {errorMessage}
-                </p>
-              )}
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* 3. REVIEW MODAL */}
-      {showReviewModal && (
-        <div className="fixed inset-0 bg-zinc-950/90 backdrop-blur-lg flex justify-center items-center z-50 p-6">
-          <div
-            className={`${premiumCardClass} rounded-3xl p-10 max-w-md w-full animate-in fade-in zoom-in-95 duration-300 bg-black`}
-          >
-            <button
-              onClick={() => {
-                setShowReviewModal(false);
-                setReviewData({ name: "", rating: 0, comment: "" });
-                setHoverStars(0);
-              }}
-              className="absolute top-6 right-6 text-zinc-500 hover:text-white transition-colors p-1 bg-white/5 rounded-full hover:bg-white/10"
-            >
-              <X size={20} />
-            </button>
-            <h2 className="text-2xl font-bold text-center mb-8 text-white leading-tight">
-              Share Your Experience
-            </h2>
-            <form onSubmit={submitReview} className="space-y-6">
-              <input
-                type="text"
-                placeholder="Your Name"
-                value={reviewData.name}
-                onChange={(e) =>
-                  setReviewData({ ...reviewData, name: e.target.value })
-                }
-                className="w-full px-6 py-4 bg-zinc-950 border border-white/20 rounded-xl text-white placeholder:text-zinc-600 focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-all text-sm font-medium shadow-inner"
-                required
-              />
-              <div className="text-center py-4 bg-white/5 rounded-2xl border border-white/5">
-                <p className="mb-3 text-zinc-400 text-xs uppercase tracking-widest font-bold">
-                  Tap Stars to Rate
-                </p>
-                <div className="flex justify-center gap-3">
-                  {renderStars(reviewData.rating, true)}
+                <div className="text-center py-4 bg-white/5 rounded-2xl border border-white/5">
+                  <p className="mb-3 text-zinc-400 text-xs uppercase tracking-widest font-bold">
+                    Tap Stars to Rate
+                  </p>
+                  <div className="flex justify-center gap-3">
+                    {renderStars(reviewData.rating, true)}
+                  </div>
                 </div>
-              </div>
-              <textarea
-                placeholder="Write your review here..."
-                rows="4"
-                value={reviewData.comment}
-                onChange={(e) =>
-                  setReviewData({ ...reviewData, comment: e.target.value })
-                }
-                className="w-full px-6 py-4 bg-zinc-950 border border-white/20 rounded-xl text-white placeholder:text-zinc-600 focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-all text-sm font-medium resize-none shadow-inner"
-              />
-              <button
-                type="submit"
-                disabled={submittingReview}
-                className="w-full py-4 bg-white text-black hover:bg-gray-100 rounded-xl text-lg font-bold transition-all shadow-lg disabled:opacity-50 active:scale-[0.98]"
-              >
-                {submittingReview ? "Submitting..." : "Post Review"}
-              </button>
-            </form>
+                <textarea
+                  placeholder="Write your review here..."
+                  rows="4"
+                  value={reviewData.comment}
+                  onChange={(e) =>
+                    setReviewData({ ...reviewData, comment: e.target.value })
+                  }
+                  className="w-full px-6 py-4 bg-zinc-950 border border-white/20 rounded-xl text-white placeholder:text-zinc-600 focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-all text-sm font-medium resize-none shadow-inner"
+                />
+                <button
+                  type="submit"
+                  disabled={submittingReview}
+                  className="w-full py-4 bg-white text-black hover:bg-gray-100 rounded-xl text-lg font-bold transition-all shadow-lg disabled:opacity-50 active:scale-[0.98]"
+                >
+                  {submittingReview ? "Submitting..." : "Post Review"}
+                </button>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* 4. ROADMAP MODAL */}
-      {showRoadmap && course.roadmapImage && (
-        <div
-          className="fixed inset-0 bg-zinc-950/95 z-[100] flex items-center justify-center p-4 lg:p-8 backdrop-blur-xl animate-in fade-in duration-300"
-          onClick={() => setShowRoadmap(false)}
-        >
-          <button className="absolute top-6 right-6 text-white/70 hover:text-white transition bg-white/10 p-2.5 rounded-full hover:bg-white/20 z-10">
-            <X size={28} />
-          </button>
-          <img
-            src={course.roadmapImage}
-            alt="Roadmap Full View"
-            className="max-w-full max-h-[90vh] rounded-2xl shadow-2xl border border-white/10 object-contain animate-in zoom-in-95 duration-300"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-      )}
-      <FAQSection />
+        {/* 4. ROADMAP MODAL */}
+        {showRoadmap && course.roadmapImage && (
+          <div
+            className="fixed inset-0 bg-zinc-950/95 z-[100] flex items-center justify-center p-4 lg:p-8 backdrop-blur-xl animate-in fade-in duration-300"
+            onClick={() => setShowRoadmap(false)}
+          >
+            <button className="absolute top-6 right-6 text-white/70 hover:text-white transition bg-white/10 p-2.5 rounded-full hover:bg-white/20 z-10">
+              <X size={28} />
+            </button>
+            <img
+              src={course.roadmapImage}
+              alt="Roadmap Full View"
+              className="max-w-full max-h-[90vh] rounded-2xl shadow-2xl border border-white/10 object-contain animate-in zoom-in-95 duration-300"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        )}
+        <FAQSection />
+      </div>
     </div>
   );
 };

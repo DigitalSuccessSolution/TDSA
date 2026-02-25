@@ -3,6 +3,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import ScrollVelocity from "./ScrollVelocity";
 import Journey from "./Journey";
+import WhyChooseUs from "./WhyChooseUs";
 gsap.registerPlugin(ScrollTrigger);
 
 const AboutUs = () => {
@@ -37,7 +38,8 @@ const AboutUs = () => {
         },
       );
 
-      // Timeline animation
+      // Timeline animation - targets commented out because they were non-existent
+      /*
       gsap.fromTo(
         ".timeline-item",
         {
@@ -119,6 +121,7 @@ const AboutUs = () => {
           },
         },
       );
+      */
 
       // Floating particles animation
       gsap.to(".floating-particle", {
@@ -251,7 +254,10 @@ const AboutUs = () => {
       </div>
 
       {/* Hero Section */}
-      <div ref={heroRef} className="relative z-10 pt-20 md:pt-32 pb-10 md:pb-20">
+      <div
+        ref={heroRef}
+        className="relative z-10 pt-20 md:pt-32 pb-10 md:pb-20"
+      >
         <div className="container mx-auto px-6 text-center">
           <h1 className="text-5xl md:text-9xl font-black mb-8 text-white leading-none">
             {splitText("REDEFINING")}
@@ -272,8 +278,20 @@ const AboutUs = () => {
           </h2>
 
           <p className="text-lg md:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed">
-            Where artificial intelligence meets human potential. We're building
-            the future of data science education, one innovator at a time.
+            The Data Science Academy is a leading platform dedicated to
+            practical, industry-focused education in Data Science and Artificial
+            Intelligence. Since 2020, we have empowered learners with the
+            skills, knowledge, and hands-on experience required to succeed in
+            today’s data-driven world.
+            {/* <br />
+            Through project-based learning, mentorship, and real-world
+            exposure, our programs ensure graduates are well-prepared for
+            high-impact roles across diverse industries.
+            <br />
+            With a strong track record of career transformation and professional
+            growth, The Data Science Academy continues to innovate and provide
+            learners with the tools to thrive in an ever-evolving technological
+            landscape. */}
           </p>
         </div>
       </div>
@@ -485,12 +503,17 @@ const AboutUs = () => {
                 <h4 className="text-lg md:text-2xl font-black text-white mb-1 md:mb-4">
                   {value.title}
                 </h4>
-                <p className="text-xs md:text-sm md:text-gray-300 leading-relaxed">{value.desc}</p>
+                <p className="text-xs md:text-sm md:text-gray-300 leading-relaxed">
+                  {value.desc}
+                </p>
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      {/* Why Choose Us Section */}
+      <WhyChooseUs />
 
       {/* CTA Section */}
       <div className="relative z-10 py-10 md:py-20">

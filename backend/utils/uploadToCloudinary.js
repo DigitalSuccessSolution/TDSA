@@ -6,19 +6,24 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const uploadToCloudinary = (buffer) => {
+const uploadToCloudinary = (file) => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         resource_type: "auto",
         folder: "data-science-academy",
+        public_id: file.originalname
+          ? file.originalname.split(".")[0]
+          : undefined,
+        use_filename: true,
+        unique_filename: true,
       },
       (error, result) => {
         if (error) return reject(error);
         resolve(result.secure_url);
-      }
+      },
     );
-    uploadStream.end(buffer);
+    uploadStream.end(file.buffer);
   });
 };
 

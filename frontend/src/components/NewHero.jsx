@@ -112,7 +112,7 @@ const NewHero = () => {
         {/* ✅ H1 with Manual Split & 3D Perspective */}
         <h1
           style={{ perspective: "1000px" }} // Important for rotationX effect
-          className="text-2xl sm:text-6xl md:text-7xl font-bold mb-2 md:mb-6 text-white leading-tight"
+          className="text-2xl sm:text-6xl md:text-5xl lg:text-7xl font-bold mb-2 md:mb-6 text-white leading-tight"
         >
           {/* Line 1 */}
           <div className="block">
@@ -122,7 +122,7 @@ const NewHero = () => {
           {/* Line 2 */}
           <div className="block mt-2">{splitText("on your path")}</div>
         </h1>
-
+        
         <p className="hero-subtext opacity-0 text-lg sm:text-xl md:text-2xl text-white font-light translate-y-3">
           Shaping the{" "}
           <span

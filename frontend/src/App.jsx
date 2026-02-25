@@ -24,6 +24,7 @@ import CourseDetails2 from "./components/CourseDetails2";
 // Student Components
 import StudentLogin from "./pages/Login";
 import StudentRegister from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
 import StudentDashboard from "./pages/StudentDashboard";
 import QuizPlayer from "./pages/QuizPlayer";
 
@@ -32,6 +33,7 @@ import AdminDashboard from "./components/admin/Dashbaord";
 import AdminLogin from "./components/admin/AdminLogin";
 import AdminProtectedRoute from "./components/admin/AdminProtectedRoute";
 import FacultyLogin from "./components/faculty/FacultyLogin";
+import FacultyForgotPassword from "./components/faculty/FacultyForgotPassword";
 import FacultyRegister from "./components/faculty/FacultyRegister";
 import FacultyDashboard from "./components/faculty/FacultyDashboard";
 import AddClass from "./components/faculty/AddClass";
@@ -108,6 +110,7 @@ function App() {
             {/* STUDENT AUTH */}
             <Route path="/login" element={<StudentLogin />} />
             <Route path="/register" element={<StudentRegister />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
 
             {/* PROTECTED ROUTES */}
             <Route
@@ -135,6 +138,10 @@ function App() {
             </Route>
             {/* FACULTY */}
             <Route path="/faculty/login" element={<FacultyLogin />} />
+            <Route
+              path="/faculty/forgot-password"
+              element={<FacultyForgotPassword />}
+            />
             <Route path="/faculty/register" element={<FacultyRegister />} />
             <Route path="/faculty/dashboard" element={<FacultyDashboard />} />
             <Route path="/faculty/add-class" element={<AddClass />} />

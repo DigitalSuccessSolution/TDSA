@@ -29,7 +29,7 @@ exports.getQuizzesForStudent = async (req, res) => {
     // C. Merge Data
     const quizzesWithStatus = quizzes.map((q) => {
       const quizAttempts = attempts.filter(
-        (a) => a.quiz.toString() === q._id.toString()
+        (a) => a.quiz.toString() === q._id.toString(),
       );
       const attemptsCount = quizAttempts.length;
 
@@ -84,7 +84,7 @@ exports.submitQuiz = async (req, res) => {
     let uploadedFileUrl = null;
     if (req.file) {
       if (req.file.buffer) {
-        uploadedFileUrl = await uploadToCloudinary(req.file.buffer);
+        uploadedFileUrl = await uploadToCloudinary(req.file);
       } else {
         uploadedFileUrl = req.file.path;
       }
@@ -246,7 +246,7 @@ exports.getQuizForAttempt = async (req, res) => {
   try {
     const { quizId } = req.params;
     const quiz = await Quiz.findById(quizId).select(
-      "-questions.options.isCorrect"
+      "-questions.options.isCorrect",
     );
 
     if (!quiz) {
@@ -256,6 +256,34 @@ exports.getQuizForAttempt = async (req, res) => {
     res.json(quiz);
   } catch (err) {
     console.error("Fetch Single Quiz Error:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.getQuizResultsForAdmin = async (req, res) => {
+  try {
+    const { quizId } = req.params;
+
+    const results = await StudentQuizResult.find({ quiz: quizId })
+      .populate("student", "name email") // Student details
+      .sort({ score: -1 }); // Highest score first
+
+    res.json(results);
+  } catch (err) {
+    console.error("Admin Result Fetch Error:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// ✅ ADMIN: Get Quizzes List by Course ID (For Dropdown)
+exports.getQuizzesByCourseId = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    // Sirf Title aur ID chahiye dropdown ke liye
+    const quizzes = await Quiz.find({ courseId }).select("title _id");
+    res.json(quizzes);
+  } catch (err) {
+    console.error("Error fetching quizzes for course:", err);
     res.status(500).json({ message: err.message });
   }
 };

@@ -48,8 +48,7 @@ const Courses = () => {
       title: "Data Visualization",
       duration: "3 Months",
       level: "Beginner",
-      description:
-        "Create stunning visualizations and interactive dashboards.",
+      description: "Create stunning visualizations and interactive dashboards.",
       img: "./images/datavisulation.png",
     },
     {
@@ -98,8 +97,7 @@ const Courses = () => {
         <span
           className="text-transparent bg-clip-text"
           style={{
-            background:
-              "linear-gradient(90deg,#D22D1E,#963AB0,#20469B)",
+            background: "linear-gradient(90deg,#D22D1E,#963AB0,#20469B)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
           }}
@@ -119,100 +117,99 @@ const Courses = () => {
         </button>
 
         {/* Cards Row */}
-      <div
-      ref={scrollRef}
-      className="flex gap-8 overflow-x-auto scroll-smooth snap-x snap-mandatory hide-scrollbar px-[5vw] items-center"
-    >
-      {courses.map((course, index) => (
         <div
-          key={course.id}
-          className="flex-shrink-0 w-[80vw] md:w-[45vw] lg:w-[30vw] snap-center"
+          ref={scrollRef}
+          className="flex gap-8 overflow-x-auto scroll-smooth snap-x snap-mandatory hide-scrollbar px-[5vw] items-center"
         >
-          <div className="group relative bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-xl shadow-black/20 hover:scale-[1.02] transition-all duration-500">
-            
-            {/* Course Image */}
-            <div className="relative h-56 w-full overflow-hidden">
-              <img
-                src={course.img}
-                alt={course.title}
-                className="h-full w-full object-cover transform group-hover:scale-110 transition-transform duration-700"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent"></div>
-            </div>
-
-            {/* Card Body */}
-            <div className="relative z-10 p-6 flex flex-col h-[22rem]">
-              <div className="flex items-center justify-between mb-5">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#D22D1E]/40 to-[#20469B]/40 border border-white/20 flex items-center justify-center shadow-md">
-                  <span className="text-white font-bold text-lg">
-                    {index + 1}
-                  </span>
+          {courses.map((course, index) => (
+            <div
+              key={course.id}
+              className="flex-shrink-0 w-[80vw] md:w-[45vw] lg:w-[30vw] snap-center"
+            >
+              <div className="group relative bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-xl shadow-black/20 hover:scale-[1.02] transition-all duration-500">
+                {/* Course Image */}
+                <div className="relative h-56 w-full overflow-hidden">
+                  <img
+                    src={course.img}
+                    alt={course.title}
+                    className="h-full w-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent"></div>
                 </div>
-                <div
-                  className={`px-3 py-1.5 rounded-full border text-xs font-semibold ${
-                    course.level === "Beginner"
-                      ? "bg-green-500/15 text-green-300 border-green-400/20"
-                      : course.level === "Intermediate"
-                      ? "bg-yellow-500/15 text-yellow-300 border-yellow-400/20"
-                      : "bg-purple-500/15 text-purple-300 border-purple-400/20"
-                  }`}
-                >
-                  {course.level}
-                </div>
-              </div>
 
-              <h3 className="text-2xl font-extrabold text-white mb-2 leading-tight">
-                {course.title}
-              </h3>
+                {/* Card Body */}
+                <div className="relative z-10 p-6 flex flex-col h-[22rem]">
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#D22D1E]/40 to-[#20469B]/40 border border-white/20 flex items-center justify-center shadow-md">
+                      <span className="text-white font-bold text-lg">
+                        {index + 1}
+                      </span>
+                    </div>
+                    <div
+                      className={`px-3 py-1.5 rounded-full border text-xs font-semibold ${
+                        course.level === "Beginner"
+                          ? "bg-green-500/15 text-green-300 border-green-400/20"
+                          : course.level === "Intermediate"
+                            ? "bg-yellow-500/15 text-yellow-300 border-yellow-400/20"
+                            : "bg-purple-500/15 text-purple-300 border-purple-400/20"
+                      }`}
+                    >
+                      {course.level}
+                    </div>
+                  </div>
 
-              <p className="text-gray-300 text-sm mb-5 flex-grow">
-                {course.description}
-              </p>
+                  <h3 className="text-2xl font-extrabold text-white mb-2 leading-tight">
+                    {course.title}
+                  </h3>
 
-              <div className="flex justify-between items-center py-2 border-b border-white/10 mb-5">
-                <span
-                  className="font-semibold text-transparent bg-clip-text text-lg"
-                  style={{
-                    background:
-                      "linear-gradient(90deg,#D22D1E,#963AB0,#20469B)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                  }}
-                >
-                  Duration
-                </span>
-                <span className="text-white font-medium bg-white/10 px-3 py-1.5 rounded-lg border border-white/10">
-                  {course.duration}
-                </span>
-              </div>
+                  <p className="text-gray-300 text-sm mb-5 flex-grow">
+                    {course.description}
+                  </p>
 
-              {/* Enroll Now Button with Link */}
-              <Link to={`/course/${course.id}`}>
-                <button
-                  className="
+                  <div className="flex justify-between items-center py-2 border-b border-white/10 mb-5">
+                    <span
+                      className="font-semibold text-transparent bg-clip-text text-lg"
+                      style={{
+                        background:
+                          "linear-gradient(90deg,#D22D1E,#963AB0,#20469B)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                      }}
+                    >
+                      Duration
+                    </span>
+                    <span className="text-white font-medium bg-white/10 px-3 py-1.5 rounded-lg border border-white/10">
+                      {course.duration}
+                    </span>
+                  </div>
+
+                  {/* Enroll Now Button with Link */}
+                  <Link to={`/course/${course.id}`}>
+                    <button
+                      className="
                     relative w-full py-3 rounded-xl text-white font-medium text-base
                     border border-white/20 bg-[#1a181b]
                     transition-all duration-500 overflow-hidden
                     group-hover:bg-[linear-gradient(90deg,#D22D1E,#963AB0,#20469B)]
                     hover:-translate-y-1
                   "
-                >
-                  <div
-                    className="
+                    >
+                      <div
+                        className="
                       absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent
                       transform -skew-x-12 translate-x-[-100%]
                       group-hover:translate-x-[100%]
                       transition-all duration-700
                     "
-                  ></div>
-                  <span className="relative z-10">Enroll Now</span>
-                </button>
-              </Link>
+                      ></div>
+                      <span className="relative z-10">Enroll Now</span>
+                    </button>
+                  </Link>
+                </div>
+              </div>
             </div>
-          </div>
+          ))}
         </div>
-      ))}
-    </div>
 
         {/* Right Button */}
         <button

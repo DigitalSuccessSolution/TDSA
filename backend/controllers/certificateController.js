@@ -1,6 +1,7 @@
 require("dotenv").config();
 const StudentQuizResult = require("../models/StudentQuizResult");
 const generateCertificate = require("../utils/generateCertificate");
+const { userTemplates, subjects } = require("../utils/emailTemplates"); // ✅ Import Templates & Subjects
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
@@ -73,7 +74,7 @@ exports.sendCertificate = async (req, res) => {
     }
 
     console.log(
-      `Generating Certificate -> Name: ${studentName}, Date: ${formattedDate}, Mentor: ${mentorName}, No: ${certNumber}`
+      `Generating Certificate -> Name: ${studentName}, Date: ${formattedDate}, Mentor: ${mentorName}, No: ${certNumber}`,
     );
 
     // 4. GENERATE PDF
@@ -90,24 +91,24 @@ exports.sendCertificate = async (req, res) => {
       courseName,
       formattedDate,
       mentorName,
-      certNumber // Passing it just in case, or for future use
+      certNumber, // Passing it just in case, or for future use
     );
 
     // 5. SEND EMAIL
+
+    // ✅ Generate HTML from Template
+    const emailHtml = userTemplates.certificate_completion(
+      { name: studentName },
+      { courseName: courseName },
+    );
+
+    const subject = subjects.certificate_completion({ courseName });
+
     const mailOptions = {
       from: `"Data Science Academy" <${process.env.SMTP_EMAIL}>`,
       to: studentEmail,
-      subject: `🏆 Certificate of Achievement: ${courseName}`,
-      html: `
-                <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-                    <h2 style="color: #4F46E5;">Congratulations, ${studentName}!</h2>
-                    <p>We are thrilled to certify your success in <strong>${courseName}</strong>.</p>
-                    <p>Issued on: <strong>${formattedDate}</strong></p>
-                    <p>Mentor: <strong>${mentorName}</strong></p>
-                    <br/>
-                    <p>Attached is your official certificate.</p>
-                </div>
-            `,
+      subject: subject,
+      html: emailHtml, // ✅ Use Template HTML
       attachments: [
         {
           filename: `${studentName.replace(/\s+/g, "_")}_Certificate.pdf`,
@@ -121,11 +122,9 @@ exports.sendCertificate = async (req, res) => {
     res.json({ message: `Certificate sent successfully to ${studentEmail}` });
   } catch (err) {
     console.error("❌ Certificate Controller Error:", err);
-    res
-      .status(500)
-      .json({
-        message: "Failed to generate/send certificate.",
-        error: err.message,
-      });
+    res.status(500).json({
+      message: "Failed to generate/send certificate.",
+      error: err.message,
+    });
   }
 };

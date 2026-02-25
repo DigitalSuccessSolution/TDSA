@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const FacultyLogin = () => {
-  const [formData, setFormData] = useState({ email: '', password: '' });
-  const [error, setError] = useState('');
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -14,11 +14,14 @@ const FacultyLogin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/faculty/login`, formData);
-      localStorage.setItem('facultyToken', res.data.token);
-      navigate('/faculty/dashboard');
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_URL}/api/faculty/login`,
+        formData,
+      );
+      localStorage.setItem("facultyToken", res.data.token);
+      navigate("/faculty/dashboard");
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid credentials');
+      setError(err.response?.data?.message || "Invalid credentials");
     }
   };
 
@@ -28,8 +31,12 @@ const FacultyLogin = () => {
         <div className="bg-zinc-900 rounded-3xl shadow-2xl p-8 border border-zinc-800">
           {/* Header */}
           <div className="mb-10 text-center">
-            <h2 className="text-4xl font-bold text-white mb-3">Faculty Login</h2>
-            <p className="text-zinc-400 text-sm">Welcome back! Please login to your account</p>
+            <h2 className="text-4xl font-bold text-white mb-3">
+              Faculty Login
+            </h2>
+            <p className="text-zinc-400 text-sm">
+              Welcome back! Please login to your account
+            </p>
           </div>
 
           {/* Error Message */}
@@ -42,7 +49,9 @@ const FacultyLogin = () => {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-2">Email Address</label>
+              <label className="block text-sm font-medium text-zinc-300 mb-2">
+                Email Address
+              </label>
               <input
                 type="email"
                 name="email"
@@ -55,7 +64,9 @@ const FacultyLogin = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-2">Password</label>
+              <label className="block text-sm font-medium text-zinc-300 mb-2">
+                Password
+              </label>
               <input
                 type="password"
                 name="password"
@@ -65,6 +76,15 @@ const FacultyLogin = () => {
                 required
                 className="w-full px-4 py-3.5 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition"
               />
+            </div>
+
+            <div className="flex justify-end">
+              <a
+                href="/faculty/forgot-password"
+                className="text-sm text-cyan-400 hover:text-cyan-300 transition"
+              >
+                Forgot Password?
+              </a>
             </div>
 
             <button
@@ -78,8 +98,11 @@ const FacultyLogin = () => {
           {/* Register Link */}
           <div className="mt-8 text-center">
             <p className="text-sm text-zinc-400">
-              New faculty member?{' '}
-              <a href="/faculty/register" className="text-cyan-400 font-semibold hover:text-cyan-300 transition">
+              New faculty member?{" "}
+              <a
+                href="/faculty/register"
+                className="text-cyan-400 font-semibold hover:text-cyan-300 transition"
+              >
                 Register here
               </a>
             </p>
@@ -87,7 +110,9 @@ const FacultyLogin = () => {
 
           {/* Optional Footer */}
           <div className="mt-10 text-center">
-            <p className="text-xs text-zinc-600">© 2025 Your Institute • Faculty Portal</p>
+            <p className="text-xs text-zinc-600">
+              © 2025 Your Institute • Faculty Portal
+            </p>
           </div>
         </div>
       </div>

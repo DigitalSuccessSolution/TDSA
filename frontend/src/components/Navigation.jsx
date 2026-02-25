@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, logout } = useContext(AuthContext); // User data aur logout function lein
+  const { user, logout, enrollments } = useContext(AuthContext); // User data aur logout function lein
   const navigate = useNavigate();
 
   const navItems = [
@@ -95,11 +95,29 @@ const Navbar = () => {
               {user ? (
                 // --- VIEW IF LOGGED IN ---
                 <div className="flex items-center gap-4">
+                  {/* Dashboard / Enroll Now Logic */}
+                  {enrollments && enrollments.length > 0 ? (
+                    <Link
+                      to="/my-courses"
+                      className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-medium text-sm hover:shadow-lg hover:shadow-purple-500/20 transition-all duration-300"
+                    >
+                      Student Dashboard
+                    </Link>
+                  ) : (
+                    <HashLink
+                      smooth
+                      to="/#courses"
+                      className="px-4 py-2 border border-white/20 text-white rounded-lg font-medium text-sm hover:bg-white/10 transition-all duration-300"
+                    >
+                      Enroll Now
+                    </HashLink>
+                  )}
+
                   {/* User Name Display */}
-                  <div className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full border border-white/10">
-                    <User size={18} className="text-[#D22D1E]" />
-                    <span className="text-white font-medium capitalize">
-                      {user.name || "Student"}
+                  <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/10">
+                    <User size={16} className="text-gray-400" />
+                    <span className="text-white text-sm font-medium capitalize">
+                      {user.name?.split(" ")[0] || "Student"}
                     </span>
                   </div>
 
@@ -107,10 +125,9 @@ const Navbar = () => {
                   <button
                     onClick={handleLogout}
                     title="Logout"
-                    className="flex items-center gap-2 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-300"
+                    className="p-2 text-gray-400 hover:text-white transition-colors duration-300"
                   >
                     <LogOut size={20} />
-                    <span className="text-sm font-medium">Logout</span>
                   </button>
                 </div>
               ) : (
@@ -171,18 +188,38 @@ const Navbar = () => {
                   className="pt-8 w-full max-w-xs space-y-4"
                 >
                   {user ? (
-                    <>
-                      <div className="flex items-center justify-center gap-3 text-white text-xl font-medium mb-4">
-                        <User size={24} className="text-[#D22D1E]" />
-                        Hello, {user.name}
+                    <div className="flex flex-col gap-4 w-full">
+                      <div className="flex items-center justify-center gap-3 text-white text-xl font-medium mb-2 border-b border-white/10 pb-4">
+                        <User size={24} className="text-gray-400" />
+                        Hello, {user.name?.split(" ")[0]}
                       </div>
+
+                      {enrollments && enrollments.length > 0 ? (
+                        <Link
+                          to="/my-courses"
+                          onClick={() => setIsMenuOpen(false)}
+                          className="w-full flex items-center justify-center gap-2 px-8 py-4 text-lg font-semibold text-white bg-linear-to-r from-purple-600 to-blue-600 rounded-xl hover:shadow-lg hover:shadow-purple-600/20 transition-all duration-300"
+                        >
+                          Student Dashboard
+                        </Link>
+                      ) : (
+                        <HashLink
+                          smooth
+                          to="/#courses"
+                          onClick={() => setIsMenuOpen(false)}
+                          className="w-full flex items-center justify-center gap-2 px-8 py-4 text-lg font-semibold text-white bg-linear-to-r from-red-600 to-purple-600 rounded-xl hover:shadow-lg hover:shadow-red-600/20 transition-all duration-300"
+                        >
+                          Enroll Now
+                        </HashLink>
+                      )}
+
                       <button
                         onClick={handleLogout}
-                        className="w-full flex items-center justify-center gap-2 px-8 py-4 text-lg font-semibold text-white bg-linear-to-r from-red-600 to-red-800 rounded-xl hover:shadow-lg hover:shadow-red-600/20 transition-all duration-300"
+                        className="w-full flex items-center justify-center gap-2 px-8 py-4 text-lg font-semibold text-gray-300 border border-white/10 rounded-xl hover:bg-white/5 transition-all duration-300"
                       >
                         <LogOut size={22} /> Logout
                       </button>
-                    </>
+                    </div>
                   ) : (
                     <Link
                       to="/login"

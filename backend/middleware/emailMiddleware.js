@@ -1,26 +1,29 @@
 const { sendEmail } = require("../services/emailServices");
-const { userTemplates } = require("../utils/emailTemplates");
+const { userTemplates, subjects } = require("../utils/emailTemplates");
 
 const emailMiddleware = (templateName) => {
   return (req, res, next) => {
-    
     // Response client ko jane ke baad ye trigger hoga (Background Process)
-    res.on('finish', async () => {
-      
+    res.on("finish", async () => {
       // Sirf successful requests (200-299) par hi email bhejein
       if (res.statusCode >= 200 && res.statusCode < 300) {
         try {
           // Common Data Fetching
           const courseData = res.locals.course || req.body.course || {};
-          const finalCourseName = courseData.name || courseData.title || courseData.subject || "Course";
+          const finalCourseName =
+            courseData.name ||
+            courseData.title ||
+            courseData.subject ||
+            "Course";
 
           // ============================================================
           // SCENARIO A: BULK MODE (Faculty Updates - Quiz, Class, Links)
           // ============================================================
           // Controller ne 'recipients' list set ki hai? -> Bulk Mode ON
           if (res.locals.recipients && res.locals.recipients.length > 0) {
-            
-            console.log(`📢 Bulk Mode: Sending '${templateName}' to ${res.locals.recipients.length} students.`);
+            console.log(
+              `📢 Bulk Mode: Sending '${templateName}' to ${res.locals.recipients.length} students.`,
+            );
             const updateType = res.locals.updateType || "New Update";
 
             // Parallel Process (Fast)
@@ -29,20 +32,28 @@ const emailMiddleware = (templateName) => {
                 const templatePayload = {
                   courseName: finalCourseName,
                   type: updateType,
-                  ...courseData
+                  ...courseData,
                 };
-                
-                const html = userTemplates[templateName]?.(student, templatePayload);
-                
+
+                const html = userTemplates[templateName]?.(
+                  student,
+                  templatePayload,
+                );
+
                 if (html) {
+                  // Determine Subject
+                  const subject = subjects[templateName]
+                    ? subjects[templateName](templatePayload)
+                    : `📢 Update: ${updateType}`;
+
                   // Error handling per email taaki ek fail hone par baaki na rukein
                   try {
-                    await sendEmail(student.email, `📢 Update: ${updateType}`, html);
+                    await sendEmail(student.email, subject, html);
                   } catch (e) {
                     console.error(`Failed to send to ${student.email}`);
                   }
                 }
-              })
+              }),
             );
             console.log("✅ All bulk emails processing complete.");
             return; // Exit here
@@ -52,7 +63,7 @@ const emailMiddleware = (templateName) => {
           // SCENARIO B: SINGLE MODE (Enrollment, Registration)
           // ============================================================
           // Fallback: Controller ne single 'student' ya 'user' set kiya hai
-          
+
           const user = res.locals.student || req.user || req.body.user;
           const email = user?.email || req.body.email;
 
@@ -62,8 +73,8 @@ const emailMiddleware = (templateName) => {
           }
 
           const templatePayload = {
-             courseName: finalCourseName,
-             ...courseData
+            courseName: finalCourseName,
+            ...courseData,
           };
 
           const html = userTemplates[templateName]?.(user, templatePayload);
@@ -73,13 +84,12 @@ const emailMiddleware = (templateName) => {
             return;
           }
 
-          await sendEmail(
-            email,
-            `Notification: ${templateName} - TDSA`,
-            html
-          );
-          console.log(`✅ Single Email sent to ${email} for ${templateName}`);
+          const subject = subjects[templateName]
+            ? subjects[templateName](templatePayload)
+            : `Notification: ${templateName} - TDSA`;
 
+          await sendEmail(email, subject, html);
+          console.log(`✅ Single Email sent to ${email} for ${templateName}`);
         } catch (error) {
           console.error("❌ Email Middleware Error:", error.message);
         }

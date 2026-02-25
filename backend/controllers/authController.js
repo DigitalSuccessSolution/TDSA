@@ -3,6 +3,8 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto"); // NEW: Random string generate karne ke liye
 
+const { sendEmail } = require("../services/emailServices");
+const { userTemplates, subjects } = require("../utils/emailTemplates");
 const JWT_SECRET = process.env.JWT_SECRET || "academy2025supersecretkey123";
 
 // generateToken ab 'sessionId' bhi lega
@@ -102,6 +104,82 @@ exports.login = async (req, res) => {
     });
   } catch (error) {
     console.error("Login Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Generate 4-digit OTP
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+
+    user.resetPasswordOtp = otp;
+    user.resetPasswordExpires = Date.now() + 10 * 60 * 1000;
+
+    await user.save();
+
+    const htmlContent = userTemplates.forgot_password(user, { otp });
+    const subject = subjects.forgot_password({ otp });
+
+    await sendEmail(user.email, subject, htmlContent);
+
+    res.status(200).json({ message: "OTP sent to your email" });
+  } catch (error) {
+    console.error("Forgot Password Error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+exports.verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const user = await User.findOne({
+      email: email.toLowerCase(),
+      resetPasswordOtp: otp,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    res.status(200).json({ message: "OTP Verified" });
+  } catch (error) {
+    console.error("Verify OTP Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    const user = await User.findOne({
+      email: email.toLowerCase(),
+      resetPasswordOtp: otp,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    user.password = newPassword;
+    user.resetPasswordOtp = undefined;
+    user.resetPasswordExpires = undefined;
+
+    await user.save();
+
+    res.status(200).json({ message: "Password reset successful" });
+  } catch (error) {
+    console.error("Reset Password Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

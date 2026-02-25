@@ -19,6 +19,8 @@ import {
   Award,
   ChevronRight,
   Download,
+  Star,
+  MessageSquare,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -59,6 +61,8 @@ const AdminDashboard = () => {
   const [brochureName, setBrochureName] = useState("");
   const [reviews, setReviews] = useState([]);
   const [mentors, setMentors] = useState([]);
+  const [mrpPrice, setMrpPrice] = useState("");
+  const [finalPrice, setFinalPrice] = useState("");
 
   // NEW STATES
   const [roadmapImage, setRoadmapImage] = useState(null);
@@ -66,12 +70,18 @@ const AdminDashboard = () => {
   const [skillsImages, setSkillsImages] = useState([]); // New files
   const [skillsImagesPreviews, setSkillsImagesPreviews] = useState([]); // New file previews
   const [existingSkillsImages, setExistingSkillsImages] = useState([]); // Database URLs
+  const [adminReviews, setAdminReviews] = useState([]);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [editingReview, setEditingReview] = useState(null);
+  const [editRating, setEditRating] = useState(5);
+  const [editComment, setEditComment] = useState("");
 
   useEffect(() => {
     fetchCourses();
     if (activeTab === "courses") fetchAllFaculty();
     if (activeTab === "enrollments") fetchEnrollments();
     if (activeTab === "faculty") fetchFacultyAssignmentsData();
+    if (activeTab === "reviews") fetchAdminReviews();
   }, [activeTab]);
 
   // ==============================
@@ -90,7 +100,9 @@ const AdminDashboard = () => {
   const fetchEnrollments = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/enrollments/all`);
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/enrollments/all`,
+      );
       const data = await res.json();
       setEnrollments(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -112,12 +124,29 @@ const AdminDashboard = () => {
   const fetchFacultyAssignmentsData = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/faculty/assignments`);
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/faculty/assignments`,
+      );
       if (res.ok) setFacultyAssignments(await res.json());
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAdminReviews = async () => {
+    setReviewLoading(true);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/reviews/admin/all`,
+      );
+      const data = await res.json();
+      setAdminReviews(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setReviewLoading(false);
     }
   };
 
@@ -128,9 +157,12 @@ const AdminDashboard = () => {
     if (!window.confirm("Are you sure you want to delete this enrollment?"))
       return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/enrollments/${id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/enrollments/${id}`,
+        {
+          method: "DELETE",
+        },
+      );
       if (res.ok) fetchEnrollments();
       else alert("Failed to delete");
     } catch (err) {
@@ -146,9 +178,12 @@ const AdminDashboard = () => {
     if (!window.confirm("Double Check: Are you absolutely sure?")) return;
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/enrollments/all`, {
-        method: "DELETE",
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/enrollments/all`,
+        {
+          method: "DELETE",
+        },
+      );
       if (res.ok) {
         alert("All enrollments deleted.");
         fetchEnrollments();
@@ -162,13 +197,54 @@ const AdminDashboard = () => {
     if (!window.confirm("Are you sure you want to remove this faculty member?"))
       return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/faculty/${id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/faculty/${id}`,
+        {
+          method: "DELETE",
+        },
+      );
       if (res.ok) fetchFacultyAssignmentsData();
       else {
         const data = await res.json();
         alert("Failed: " + data.message);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteReview = async (id) => {
+    if (!window.confirm("Delete this review?")) return;
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/reviews/admin/${id}`,
+        {
+          method: "DELETE",
+        },
+      );
+      if (res.ok) fetchAdminReviews();
+      else alert("Failed to delete review");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleUpdateReview = async () => {
+    if (!editingReview) return;
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/reviews/admin/${editingReview._id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rating: editRating, comment: editComment }),
+        },
+      );
+      if (res.ok) {
+        setEditingReview(null);
+        fetchAdminReviews();
+      } else {
+        alert("Failed to update review");
       }
     } catch (err) {
       console.error(err);
@@ -187,7 +263,7 @@ const AdminDashboard = () => {
 
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/courses/${courseId}/quizzes`
+        `${import.meta.env.VITE_API_URL}/api/courses/${courseId}/quizzes`,
       );
       if (res.ok) setResultQuizzes(await res.json());
     } catch (err) {
@@ -205,7 +281,7 @@ const AdminDashboard = () => {
     setResultsLoading(true);
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/courses/results/${quizId}`
+        `${import.meta.env.VITE_API_URL}/api/courses/results/${quizId}`,
       );
       if (res.ok) setStudentResults(await res.json());
     } catch (err) {
@@ -240,11 +316,14 @@ const AdminDashboard = () => {
     if (!window.confirm("Generate and email certificate?")) return;
     setSendingCert(resultId);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/certificate/send`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resultId }),
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/certificate/send`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ resultId }),
+        },
+      );
       const data = await res.json();
       if (res.ok) alert("✅ " + data.message);
       else alert("❌ Error: " + data.message);
@@ -269,28 +348,25 @@ const AdminDashboard = () => {
     formData.append("description", description.trim());
     formData.append("duration", duration.trim());
     formData.append("level", level);
+    formData.append("mrpPrice", mrpPrice || 0);
+    formData.append("finalPrice", finalPrice || 0);
 
     let videoUrl = demoVideo?.trim() || "";
     if (videoUrl.includes("watch?v="))
       videoUrl = videoUrl.replace("watch?v=", "embed/");
     formData.append("demoVideo", videoUrl);
 
-    const cleanModules = modules
-      .map((m) => ({
-        title: m.title.trim() || "Untitled Module",
-        lectures: m.lectures
-          .map((l) => ({
-            title: l.title.trim() || "Untitled Lecture",
-            content: l.content
-              .filter(
-                (c) =>
-                  (typeof c === "string" ? c.trim() : c?.text?.trim()) !== ""
-              )
-              .map((c) => (typeof c === "string" ? { text: c.trim() } : c)),
-          }))
-          .filter((l) => l.content.length > 0),
-      }))
-      .filter((m) => m.lectures.length > 0);
+    const cleanModules = modules.map((m) => ({
+      title: m.title.trim() || "Untitled Module",
+      lectures: m.lectures.map((l) => ({
+        title: l.title.trim() || "Untitled Lecture",
+        content: l.content
+          .filter(
+            (c) => (typeof c === "string" ? c.trim() : c?.text?.trim()) !== "",
+          )
+          .map((c) => (typeof c === "string" ? { text: c.trim() } : c)),
+      })),
+    }));
     formData.append("modules", JSON.stringify(cleanModules));
 
     if (thumbnail) formData.append("thumbnail", thumbnail);
@@ -300,13 +376,13 @@ const AdminDashboard = () => {
     const validMentors = mentors.filter((m) => m.facultyId);
     validMentors.forEach((mentor, idx) => {
       const selectedFaculty = allFaculty.find(
-        (f) => f._id === mentor.facultyId
+        (f) => f._id === mentor.facultyId,
       );
       if (selectedFaculty) {
         formData.append(`mentorName_${idx}`, selectedFaculty.name);
         formData.append(
           `mentorDesignation_${idx}`,
-          mentor.designation || selectedFaculty.designation || "Mentor"
+          mentor.designation || selectedFaculty.designation || "Mentor",
         );
         formData.append(`mentorFacultyId_${idx}`, mentor.facultyId);
         if (mentor.photoFile)
@@ -363,6 +439,8 @@ const AdminDashboard = () => {
     setBrochureName("");
     setReviews([]);
     setMentors([]);
+    setMrpPrice("");
+    setFinalPrice("");
     setEditingCourse(null);
     setRoadmapImage(null);
     setRoadmapImagePreview("");
@@ -379,47 +457,47 @@ const AdminDashboard = () => {
       modules.map((m, i) =>
         i === mi
           ? { ...m, lectures: [...m.lectures, { title: "", content: [""] }] }
-          : m
-      )
+          : m,
+      ),
     );
   const removeLecture = (mi, li) =>
     setModules(
       modules.map((m, i) =>
         i === mi
           ? { ...m, lectures: m.lectures.filter((_, idx) => idx !== li) }
-          : m
-      )
+          : m,
+      ),
     );
   const addContent = (mi, li) =>
     setModules(
       modules.map((m, i) =>
         i === mi
           ? {
-            ...m,
-            lectures: m.lectures.map((l, idx) =>
-              idx === li ? { ...l, content: [...l.content, ""] } : l
-            ),
-          }
-          : m
-      )
+              ...m,
+              lectures: m.lectures.map((l, idx) =>
+                idx === li ? { ...l, content: [...l.content, ""] } : l,
+              ),
+            }
+          : m,
+      ),
     );
   const removeContent = (mi, li, ci) =>
     setModules(
       modules.map((m, i) =>
         i === mi
           ? {
-            ...m,
-            lectures: m.lectures.map((l, idx) =>
-              idx === li
-                ? {
-                  ...l,
-                  content: l.content.filter((_, cidx) => cidx !== ci),
-                }
-                : l
-            ),
-          }
-          : m
-      )
+              ...m,
+              lectures: m.lectures.map((l, idx) =>
+                idx === li
+                  ? {
+                      ...l,
+                      content: l.content.filter((_, cidx) => cidx !== ci),
+                    }
+                  : l,
+              ),
+            }
+          : m,
+      ),
     );
   const updateModuleTitle = (i, v) =>
     setModules(modules.map((m, idx) => (idx === i ? { ...m, title: v } : m)));
@@ -428,33 +506,33 @@ const AdminDashboard = () => {
       modules.map((m, i) =>
         i === mi
           ? {
-            ...m,
-            lectures: m.lectures.map((l, idx) =>
-              idx === li ? { ...l, title: v } : l
-            ),
-          }
-          : m
-      )
+              ...m,
+              lectures: m.lectures.map((l, idx) =>
+                idx === li ? { ...l, title: v } : l,
+              ),
+            }
+          : m,
+      ),
     );
   const updateContent = (mi, li, ci, v) =>
     setModules(
       modules.map((m, i) =>
         i === mi
           ? {
-            ...m,
-            lectures: m.lectures.map((l, idx) =>
-              idx === li
-                ? {
-                  ...l,
-                  content: l.content.map((c, cidx) =>
-                    cidx === ci ? v : c
-                  ),
-                }
-                : l
-            ),
-          }
-          : m
-      )
+              ...m,
+              lectures: m.lectures.map((l, idx) =>
+                idx === li
+                  ? {
+                      ...l,
+                      content: l.content.map((c, cidx) =>
+                        cidx === ci ? v : c,
+                      ),
+                    }
+                  : l,
+              ),
+            }
+          : m,
+      ),
     );
 
   const addMentor = () =>
@@ -477,37 +555,37 @@ const AdminDashboard = () => {
         mentors.map((m, i) =>
           i === idx
             ? {
-              ...m,
-              facultyId: facultyId,
-              name: selectedFaculty.name,
-              designation: selectedFaculty.designation || "Mentor",
-              photo: selectedFaculty.photo || "",
-              photoPreview: selectedFaculty.photo || "",
-            }
-            : m
-        )
+                ...m,
+                facultyId: facultyId,
+                name: selectedFaculty.name,
+                designation: selectedFaculty.designation || "Mentor",
+                photo: selectedFaculty.photo || "",
+                photoPreview: selectedFaculty.photo || "",
+              }
+            : m,
+        ),
       );
     } else {
       setMentors(
         mentors.map((m, i) =>
           i === idx
             ? {
-              ...m,
-              facultyId: "",
-              name: "",
-              designation: "",
-              photo: "",
-              photoFile: null,
-              photoPreview: "",
-            }
-            : m
-        )
+                ...m,
+                facultyId: "",
+                name: "",
+                designation: "",
+                photo: "",
+                photoFile: null,
+                photoPreview: "",
+              }
+            : m,
+        ),
       );
     }
   };
   const updateMentorDesignation = (idx, value) =>
     setMentors(
-      mentors.map((m, i) => (i === idx ? { ...m, designation: value } : m))
+      mentors.map((m, i) => (i === idx ? { ...m, designation: value } : m)),
     );
   const handleMentorPhoto = (idx, file) => {
     if (file)
@@ -515,8 +593,8 @@ const AdminDashboard = () => {
         mentors.map((m, i) =>
           i === idx
             ? { ...m, photoFile: file, photoPreview: URL.createObjectURL(file) }
-            : m
-        )
+            : m,
+        ),
       );
   };
 
@@ -540,14 +618,16 @@ const AdminDashboard = () => {
               { id: "enrollments", icon: Users, label: "Enrollments" },
               { id: "faculty", icon: Briefcase, label: "Faculty" },
               { id: "results", icon: Trophy, label: "Results" },
+              { id: "reviews", icon: MessageSquare, label: "Reviews" },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 ${activeTab === tab.id
+                className={`flex items-center gap-2 px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                  activeTab === tab.id
                     ? "bg-white text-black shadow-lg"
                     : "text-zinc-400 hover:text-white hover:bg-white/5"
-                  }`}
+                }`}
               >
                 <tab.icon size={16} /> {tab.label}
               </button>
@@ -604,8 +684,10 @@ const AdminDashboard = () => {
                               ...m,
                               photoPreview: m.photo,
                               photoFile: null,
-                            })) || []
+                            })) || [],
                           );
+                          setMrpPrice(course.mrpPrice || "");
+                          setFinalPrice(course.finalPrice || "");
                           setBrochureName(course.brochure ? "Uploaded" : "");
                           setRoadmapImagePreview(course.roadmapImage || "");
                           setExistingSkillsImages(course.skillsImages || []);
@@ -620,7 +702,7 @@ const AdminDashboard = () => {
                           if (window.confirm("Delete this course?")) {
                             await fetch(
                               `${import.meta.env.VITE_API_URL}/api/courses/${course._id}`,
-                              { method: "DELETE" }
+                              { method: "DELETE" },
                             );
                             fetchCourses();
                           }
@@ -641,15 +723,21 @@ const AdminDashboard = () => {
                     <p className="text-zinc-500 text-sm line-clamp-2 mb-6">
                       {course.description}
                     </p>
-                    <div className="pt-4 border-t border-white/5 flex justify-between text-sm text-zinc-400">
-                      <span>
-                        <Calendar size={14} className="inline mr-1" />{" "}
-                        {course.duration}
-                      </span>
-                      <span>
-                        <Users size={14} className="inline mr-1" />{" "}
-                        {course.totalReviews || 0} enrolled
-                      </span>
+                    <div className="pt-4 border-t border-white/5 flex justify-between items-center text-sm text-zinc-400">
+                      <div className="flex items-center gap-2">
+                        <Calendar size={14} className="inline" />
+                        <span>{course.duration}</span>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        {course.mrpPrice > course.finalPrice && (
+                          <span className="text-[10px] line-through text-zinc-600">
+                            ₹{course.mrpPrice}
+                          </span>
+                        )}
+                        <span className="text-white font-bold text-lg">
+                          ₹{course.finalPrice || 0}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -929,7 +1017,7 @@ const AdminDashboard = () => {
                                     onClick={() =>
                                       handleDownloadFile(
                                         res.submittedFile,
-                                        res.student?.name || "Student"
+                                        res.student?.name || "Student",
                                       )
                                     }
                                     className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-colors shadow-lg"
@@ -950,6 +1038,107 @@ const AdminDashboard = () => {
                                   <Award size={14} />
                                 )}{" "}
                                 Certify
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* --- REVIEWS TAB --- */}
+        {activeTab === "reviews" && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <h2 className="text-3xl font-bold text-white mb-8">User Reviews</h2>
+            <div className="bg-zinc-900/30 border border-white/5 rounded-3xl overflow-hidden shadow-xl">
+              {reviewLoading ? (
+                <div className="p-20 flex justify-center">
+                  <Loader2 className="animate-spin text-zinc-500 w-8 h-8" />
+                </div>
+              ) : adminReviews.length === 0 ? (
+                <div className="p-20 text-center text-zinc-500">
+                  No reviews found.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead className="bg-white/5 border-b border-white/5 text-xs uppercase tracking-wider text-zinc-400">
+                      <tr>
+                        <th className="p-6">User</th>
+                        <th className="p-6">Course</th>
+                        <th className="p-6">Rating</th>
+                        <th className="p-6">Comment</th>
+                        <th className="p-6">Date</th>
+                        <th className="p-6 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {adminReviews.map((rev) => (
+                        <tr
+                          key={rev._id}
+                          className="hover:bg-white/5 transition-colors"
+                        >
+                          <td className="p-6">
+                            <div className="text-white font-medium">
+                              {rev.user?.name || "Unknown"}
+                            </div>
+                            <div className="text-xs text-zinc-500">
+                              {rev.user?.email || "-"}
+                            </div>
+                          </td>
+                          <td className="p-6">
+                            <span className="text-sm text-zinc-300">
+                              {rev.course?.subject || "Deleted Course"}
+                            </span>
+                          </td>
+                          <td className="p-6">
+                            <div className="flex items-center gap-1">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  size={12}
+                                  className={
+                                    i < rev.rating
+                                      ? "text-yellow-400 fill-yellow-400"
+                                      : "text-zinc-700"
+                                  }
+                                />
+                              ))}
+                            </div>
+                          </td>
+                          <td className="p-6">
+                            <p
+                              className="text-sm text-zinc-400 max-w-xs truncate"
+                              title={rev.comment}
+                            >
+                              {rev.comment}
+                            </p>
+                          </td>
+                          <td className="p-6 text-sm text-zinc-500">
+                            {formatDate(rev.createdAt)}
+                          </td>
+                          <td className="p-6 text-right">
+                            <div className="flex justify-end gap-2">
+                              <button
+                                onClick={() => {
+                                  setEditingReview(rev);
+                                  setEditRating(rev.rating);
+                                  setEditComment(rev.comment);
+                                }}
+                                className="p-2 text-zinc-500 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                              >
+                                <Edit2 size={18} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteReview(rev._id)}
+                                className="p-2 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                              >
+                                <Trash2 size={18} />
                               </button>
                             </div>
                           </td>
@@ -1028,6 +1217,34 @@ const AdminDashboard = () => {
                         <option>Intermediate</option>
                         <option>Advanced</option>
                       </select>
+                    </div>
+                  </div>
+
+                  {/* PRICE SECTION */}
+                  <div className="grid grid-cols-2 gap-5">
+                    <div>
+                      <label className="block text-sm font-medium text-zinc-400 mb-2">
+                        MRP Price (₹)
+                      </label>
+                      <input
+                        type="number"
+                        value={mrpPrice}
+                        onChange={(e) => setMrpPrice(e.target.value)}
+                        className="w-full bg-zinc-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none"
+                        placeholder="e.g. 15000"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-zinc-400 mb-2">
+                        Final Price (₹)
+                      </label>
+                      <input
+                        type="number"
+                        value={finalPrice}
+                        onChange={(e) => setFinalPrice(e.target.value)}
+                        className="w-full bg-zinc-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none"
+                        placeholder="e.g. 9999"
+                      />
                     </div>
                   </div>
                   <div>
@@ -1205,7 +1422,7 @@ const AdminDashboard = () => {
                           if (files.length > 0) {
                             setSkillsImages((prev) => [...prev, ...files]);
                             const newPreviews = files.map((f) =>
-                              URL.createObjectURL(f)
+                              URL.createObjectURL(f),
                             );
                             setSkillsImagesPreviews((prev) => [
                               ...prev,
@@ -1219,7 +1436,7 @@ const AdminDashboard = () => {
 
                   <div className="bg-zinc-900/30 border border-white/5 rounded-2xl p-6 min-h-[100px]">
                     {existingSkillsImages.length === 0 &&
-                      skillsImagesPreviews.length === 0 ? (
+                    skillsImagesPreviews.length === 0 ? (
                       <div className="text-center text-zinc-600 py-4">
                         No skills added yet. Upload icons or badges.
                       </div>
@@ -1240,7 +1457,7 @@ const AdminDashboard = () => {
                               type="button"
                               onClick={() =>
                                 setExistingSkillsImages((prev) =>
-                                  prev.filter((_, idx) => idx !== i)
+                                  prev.filter((_, idx) => idx !== i),
                                 )
                               }
                               className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition shadow-lg"
@@ -1264,10 +1481,10 @@ const AdminDashboard = () => {
                               type="button"
                               onClick={() => {
                                 setSkillsImagesPreviews((prev) =>
-                                  prev.filter((_, idx) => idx !== i)
+                                  prev.filter((_, idx) => idx !== i),
                                 );
                                 setSkillsImages((prev) =>
-                                  prev.filter((_, idx) => idx !== i)
+                                  prev.filter((_, idx) => idx !== i),
                                 );
                               }}
                               className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition shadow-lg"
@@ -1290,12 +1507,6 @@ const AdminDashboard = () => {
                     <span className="w-2 h-2 rounded-full bg-blue-500"></span>{" "}
                     Curriculum
                   </h3>
-                  <button
-                    onClick={addModule}
-                    className="text-xs font-bold text-black bg-white hover:bg-zinc-200 px-4 py-2 rounded-lg flex items-center gap-1"
-                  >
-                    <Plus size={14} /> Module
-                  </button>
                 </div>
                 <div className="space-y-6">
                   {modules.map((mod, mIdx) => (
@@ -1353,7 +1564,7 @@ const AdminDashboard = () => {
                                         mIdx,
                                         lIdx,
                                         cIdx,
-                                        e.target.value
+                                        e.target.value,
                                       )
                                     }
                                     className="flex-1 bg-transparent border-b border-white/5 px-0 py-1 text-xs text-zinc-400 focus:outline-none"
@@ -1388,6 +1599,12 @@ const AdminDashboard = () => {
                     </div>
                   ))}
                 </div>
+                <button
+                  onClick={addModule}
+                  className="w-full py-4 border-2 border-dashed border-zinc-800 hover:border-zinc-700 rounded-2xl flex items-center justify-center gap-2 text-zinc-500 hover:text-white hover:bg-zinc-900/50 transition-all font-bold"
+                >
+                  <Plus size={20} /> Add New Module
+                </button>
               </section>
               <div className="h-px bg-white/5 w-full"></div>
               <section className="space-y-6">
@@ -1494,6 +1711,72 @@ const AdminDashboard = () => {
                   </>
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT REVIEW MODAL */}
+      {editingReview && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-6">
+          <div
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={() => setEditingReview(null)}
+          ></div>
+          <div className="relative w-full max-w-md bg-zinc-950 border border-white/10 rounded-3xl p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-2xl font-bold text-white mb-6">Edit Review</h3>
+
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-3">
+                  Rating
+                </label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((num) => (
+                    <button
+                      key={num}
+                      onClick={() => setEditRating(num)}
+                      className="transition-transform active:scale-95"
+                    >
+                      <Star
+                        size={28}
+                        className={
+                          num <= editRating
+                            ? "text-yellow-400 fill-yellow-400"
+                            : "text-zinc-800"
+                        }
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-3">
+                  Comment
+                </label>
+                <textarea
+                  value={editComment}
+                  onChange={(e) => setEditComment(e.target.value)}
+                  className="w-full bg-black border border-white/10 rounded-2xl p-4 text-white focus:outline-none focus:border-violet-500 min-h-[120px] resize-none"
+                  placeholder="Review comment..."
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => setEditingReview(null)}
+                  className="flex-1 px-6 py-3 bg-white/5 text-zinc-400 font-bold rounded-xl hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUpdateReview}
+                  className="flex-1 px-6 py-3 bg-white text-black font-bold rounded-xl hover:bg-zinc-200 transition-all shadow-lg"
+                >
+                  Update
+                </button>
+              </div>
             </div>
           </div>
         </div>

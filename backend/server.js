@@ -1,9 +1,9 @@
 // server.js
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const cloudinary = require('cloudinary').v2;
-require('dotenv').config();
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const cloudinary = require("cloudinary").v2;
+require("dotenv").config();
 
 const app = express();
 
@@ -16,52 +16,65 @@ cloudinary.config({
 
 // ---------------- CORS CONFIG ----------------
 // Allow localhost, vercel app, and all tdsacad.com variants
-app.use(cors({
-  origin: function (origin, callback) {
-    console.log("Incoming request origin:", origin);
-    if (
-      !origin || // Postman or server-to-server
-      origin.endsWith("tdsacad.com") ||
-      origin.endsWith("tdsa-lime.vercel.app")
-    ) {
-      callback(null, true);
-    } else {
-      console.log("CORS blocked origin:", origin);
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true, // Allow cookies/auth headers
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      console.log("Incoming request origin:", origin);
+      if (
+        !origin || // Postman or server-to-server
+        origin.endsWith("tdsacad.com") ||
+        origin.endsWith("tdsa-lime.vercel.app") ||
+        origin.includes("localhost:5173")
+      ) {
+        callback(null, true);
+      } else {
+        console.log("CORS blocked origin:", origin);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true, // Allow cookies/auth headers
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 
 // ---------------- BODY PARSERS ----------------
-app.use(express.json({ limit: '100mb' }));
-app.use(express.urlencoded({ extended: true, limit: '100mb' }));
+app.use(express.json({ limit: "100mb" }));
+app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 
 // ---------------- ROUTES ----------------
-app.use('/api/admin/faculty', require('./routes/adminFaculty'));
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/faculty', require('./routes/facultyRoutes'));
-app.use('/api/courses', require('./routes/courseRoutes'));
-app.use('/api/site', require('./routes/siteRoutes'));
-app.use('/api/enrollments', require('./routes/enrollmentRoutes'));
-app.use('/api/quizzes', require('./routes/quizRoutes'));
-app.use('/api/student', require('./routes/studentPanel'));
-app.use('/api/student/quiz', require('./routes/studentRoutes'));
-app.use('/api/reviews', require('./routes/review'));
-app.use('/api/certificate', require('./routes/certificateRoutes'));
+app.use("/api/admin/faculty", require("./routes/adminFaculty"));
+app.use("/api/auth", require("./routes/auth"));
+app.use("/api/faculty", require("./routes/facultyRoutes"));
+app.use("/api/courses", require("./routes/courseRoutes"));
+app.use("/api/site", require("./routes/siteRoutes"));
+app.use("/api/enrollments", require("./routes/enrollmentRoutes"));
+app.use("/api/quizzes", require("./routes/quizRoutes"));
+app.use("/api/student", require("./routes/studentPanel"));
+app.use("/api/student/quiz", require("./routes/studentRoutes"));
+app.use("/api/reviews", require("./routes/review"));
+app.use("/api/certificate", require("./routes/certificateRoutes"));
 
 // ---------------- GLOBAL ERROR HANDLER ----------------
 app.use((err, req, res, next) => {
   console.error("SERVER ERROR:", err.message);
-  res.status(500).json({ message: "Internal Server Error", error: err.message });
+  res
+    .status(500)
+    .json({ message: "Internal Server Error", error: err.message });
 });
 
 // ---------------- MONGODB CONNECTION ----------------
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('MongoDB Connected'))
-  .catch(err => console.log('MongoDB Error:', err));
+mongoose
+  .connect(process.env.MONGODB_URI)
+  .then(() => {
+    console.log("MongoDB Connected Successfully");
+    console.log("Database Name:", mongoose.connection.name);
+  })
+  .catch((err) => {
+    console.error("MongoDB Connection Error Details:");
+    console.error("Message:", err.message);
+    console.error("Code:", err.code);
+  });
 
 // ---------------- START SERVER ----------------
 const PORT = process.env.PORT || 5000;
