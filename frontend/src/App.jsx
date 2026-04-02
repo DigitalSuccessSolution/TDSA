@@ -21,6 +21,11 @@ import Courses from "./components/Courses";
 import CourseCurriculum from "./components/CourseDetails";
 import CourseDetails2 from "./components/CourseDetails2";
 
+
+// Payment Pages
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentFailed from "./pages/PaymentFailed";
+
 // Student Components
 import StudentLogin from "./pages/Login";
 import StudentRegister from "./pages/Register";
@@ -152,6 +157,10 @@ function App() {
             <Route path="/refund" element={<RefundPolicy />} />
             <Route path="/terms-of-service" element={<TermsOfService />} />
             <Route path="/cancellation" element={<CancellationPolicy />} />
+
+            {/* PAYMENT ROUTES */}
+            <Route path="/payment-success" element={<PaymentSuccess />} />
+            <Route path="/payment-failed" element={<PaymentFailed />} />
 
             {/* 404 PAGE */}
             <Route

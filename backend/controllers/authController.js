@@ -183,3 +183,31 @@ exports.resetPassword = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+exports.adminLogin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+
+    if (email === adminEmail && password === adminPassword) {
+      // Create a dummy admin ID for the token
+      const token = generateToken('admin_user_id', 'admin_session');
+      return res.json({
+        message: "Admin Login successful!",
+        token,
+        user: {
+          id: 'admin_user_id',
+          name: 'Administrator',
+          email: adminEmail,
+          role: 'admin'
+        }
+      });
+    } else {
+      return res.status(401).json({ message: "Invalid Admin Credentials" });
+    }
+  } catch (error) {
+    console.error("Admin Login Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};

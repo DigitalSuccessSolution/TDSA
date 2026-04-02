@@ -21,11 +21,19 @@ import {
   Download,
   Star,
   MessageSquare,
+  Ticket,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import AdminCoupons from "../../pages/AdminCoupons";
 
 const AdminDashboard = () => {
-  const navigate = useNavigate();
+  useEffect(() => {
+    // If we're on the dashboard and missing a token in state, sync it from localStorage
+    const savedToken = localStorage.getItem("token");
+    if (savedToken) {
+      // Sync logic if needed
+    }
+  }, []);
   const [activeTab, setActiveTab] = useState("courses");
 
   // --- DATA STATES ---
@@ -313,7 +321,7 @@ const AdminDashboard = () => {
   };
 
   const handleSendCertificate = async (resultId) => {
-    if (!window.confirm("Generate and email certificate?")) return;
+    if (!window.confirm("Are you sure you want to send this certificate?")) return;
     setSendingCert(resultId);
     try {
       const res = await fetch(
@@ -619,6 +627,7 @@ const AdminDashboard = () => {
               { id: "faculty", icon: Briefcase, label: "Faculty" },
               { id: "results", icon: Trophy, label: "Results" },
               { id: "reviews", icon: MessageSquare, label: "Reviews" },
+              { id: "coupons", icon: Ticket, label: "Coupons" },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -1151,6 +1160,8 @@ const AdminDashboard = () => {
             </div>
           </div>
         )}
+        {/* --- COUPONS TAB --- */}
+        {activeTab === "coupons" && <AdminCoupons />}
       </main>
 
       {/* SIDE FORM (Create/Edit Course) */}

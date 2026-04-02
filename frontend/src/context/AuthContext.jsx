@@ -25,8 +25,13 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (token) {
       const savedUser = JSON.parse(localStorage.getItem("user"));
-      if (savedUser) setUser(savedUser);
-      fetchEnrollments(token);
+      if (savedUser) {
+        setUser(savedUser);
+        // Only fetch enrollments if it's NOT an admin
+        if (savedUser.id !== 'admin_user_id' && savedUser.role !== 'admin') {
+          fetchEnrollments(token);
+        }
+      }
     }
   }, [token]);
 

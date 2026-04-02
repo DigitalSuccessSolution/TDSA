@@ -11,12 +11,13 @@ console.log("Loading Enrollment Routes...");
 
 // Routes
 
-// 1. STUDENT: Enroll in a course
+// 1. STUDENT: Enroll in a course (PRODUCTION)
 router.post('/', 
   protect,                     // 1. Pehle verify karo kaun user hai
   emailMiddleware("enrollment"), // 2. Phir email bhejo (Data ab req.user me hai)
   enrollmentController.createEnrollment // 3. Phir database me save karo
 );
+
 // 2. STUDENT: Get ONLY My Enrollments (Jo Student Dashboard me dikhta hai)
 router.get('/my', protect, enrollmentController.getMyEnrollments); 
 // Note: Maine path '/my' kar diya hai taaki conflict na ho. 

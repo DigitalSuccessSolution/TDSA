@@ -10,24 +10,32 @@ const AdminLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate network delay for a smoother feel
-    setTimeout(() => {
-      const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
-      const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/admin-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
 
-      if (email === adminEmail && password === adminPassword) {
+      if (res.ok) {
+        localStorage.setItem("token", data.token); // Use standard token key
+        localStorage.setItem("user", JSON.stringify(data.user)); // Store user object for AuthContext
         localStorage.setItem("adminAuthenticated", "true");
         toast.success("Welcome back, Admin!");
         navigate("/admin");
       } else {
-        toast.error("Invalid Credentials. Access Denied.");
+        toast.error(data.message || "Invalid Credentials. Access Denied.");
       }
+    } catch (err) {
+      toast.error("Network Error. Please try again.");
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
 
   return (

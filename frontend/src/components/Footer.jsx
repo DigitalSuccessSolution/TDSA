@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   FaLinkedinIn,
   FaTwitter,
@@ -9,29 +9,49 @@ import { Link } from "react-router-dom";
 import { HashLink } from "react-router-hash-link";
 
 const Footer = () => {
+  const [courses, setCourses] = useState([]);
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/courses`,
+        );
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          setCourses(data);
+        }
+      } catch (error) {
+        console.error("Error fetching courses for footer:", error);
+      }
+    };
+
+    fetchCourses();
+  }, []);
+
   return (
     <footer className="bg-[#151316] text-gray-300 pt-5 pb-15 relative overflow-hidden border-t border-white/10">
       {/* Gradient background shimmer */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#151316] via-[#1a181b] to-[#151316]" />
+      <div className="absolute inset-0 bg-linear-to-br from-[#151316] via-[#1a181b] to-[#151316]" />
 
       {/* 📱 Responsive Grid: 2 on mobile, 3 on tablet, 5 on large */}
       <div className="relative container mx-auto px-6 py-5 md:py-16 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 z-10">
         {/* Company Info */}
         <div className="col-span-2 sm:col-span-1">
           <span className=" ">
-           <img className="w-20 h-20" src="/images/tdsalogo-wbg.png" alt="" />
+            <img className="w-20 h-20" src="/images/tdsalogo-wbg.png" alt="" />
           </span>
           <p className="text-gray-400 mb-6 leading-relaxed">
             Empowering Students through innovation, data, and intelligence. Join
             us in redefining digital transformation.
           </p>
           <div className="flex space-x-4 mt-4 items-center -center gap-3">
-        Checkout our linkedin page.   <a
+            Checkout our linkedin page.{" "}
+            <a
               href="https://www.linkedin.com/company/tdsacad"
               className="w-10 h-10 flex items-center justify-center rounded-full border border-white/10 hover:border-[#963AB0] hover:text-[#963AB0] transition-all"
             >
               <FaLinkedinIn />
-              
             </a>
             {/* <a
               href="#"
@@ -61,16 +81,17 @@ const Footer = () => {
           </h3>
           <ul className="space-y-3 text-gray-400">
             <li>
-              123 Knowledge Street,
+            210, Dhan Trident
               <br />
               Indore, Madhya Pradesh, India
             </li>
             <li>
               <span className="text-white font-medium">Email:</span>{" "}
-           support@tdsacad.com
+              support@tdsacad.com
             </li>
             <li>
-              <span className="text-white font-medium">Phone:</span> +91  9755995529
+              <span className="text-white font-medium">Phone:</span> +91
+              9755995529
             </li>
           </ul>
         </div>
@@ -117,38 +138,53 @@ const Footer = () => {
             Courses
           </h3>
           <ul className="space-y-3">
-            <li>
-              <Link
-                to="/curriculum/data-science"
-                className="hover:text-[#D22D1E] transition-all"
-              >
-                Data Science
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/curriculum/data-engineering"
-                className="hover:text-[#D22D1E] transition-all"
-              >
-                Data Engineering
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/curriculum/machine-learning"
-                className="hover:text-[#D22D1E] transition-all"
-              >
-                Machine Learning
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/curriculum/ai-&-visualization"
-                className="hover:text-[#D22D1E] transition-all"
-              >
-                AI & Visualization
-              </Link>
-            </li>
+            {courses.length > 0 ? (
+              courses.slice(0, 5).map((course) => (
+                <li key={course._id}>
+                  <Link
+                    to={`/curriculum/${course.subject.toLowerCase().replace(/\s+/g, "-")}`}
+                    className="hover:text-[#D22D1E] transition-all"
+                  >
+                    {course.subject}
+                  </Link>
+                </li>
+              ))
+            ) : (
+              <>
+                <li>
+                  <Link
+                    to="/curriculum/data-science"
+                    className="hover:text-[#D22D1E] transition-all"
+                  >
+                    Data Science
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/curriculum/data-engineering"
+                    className="hover:text-[#D22D1E] transition-all"
+                  >
+                    Data Engineering
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/curriculum/machine-learning"
+                    className="hover:text-[#D22D1E] transition-all"
+                  >
+                    Machine Learning
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/curriculum/ai-&-visualization"
+                    className="hover:text-[#D22D1E] transition-all"
+                  >
+                    AI & Visualization
+                  </Link>
+                </li>
+              </>
+            )}
           </ul>
         </div>
 

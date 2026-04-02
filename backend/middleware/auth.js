@@ -1,24 +1,39 @@
 // server/middleware/auth.js
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
 
 exports.protect = async (req, res, next) => {
-  let token; 
+  let token;
 
-  if (req.headers.authorization?.startsWith('Bearer')) {
-    token = req.headers.authorization.split(' ')[1];
+  if (req.headers.authorization?.startsWith("Bearer")) {
+    token = req.headers.authorization.split(" ")[1];
   }
 
   if (!token) {
-    return res.status(401).json({ message: 'Not authorized, please login' });
+    return res.status(401).json({ message: "Not authorized, please login" });
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'mySuperSecretKey123');
-    req.user = await User.findById(decoded.id).select('-password');
-    if (!req.user) return res.status(401).json({ message: 'User not found' });
+    const JWT_SECRET = process.env.JWT_SECRET || "academy2025supersecretkey123";
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    // Check if it's the simulated admin
+    if (decoded.id === "admin_user_id") {
+      req.user = {
+        id: "admin_user_id",
+        _id: "admin_user_id",
+        role: "admin",
+        name: "Administrator",
+      };
+      return next();
+    }
+
+    req.user = await User.findById(decoded.id).select("-password");
+    if (!req.user) return res.status(401).json({ message: "User not found" });
     next();
   } catch (err) {
-    return res.status(401).json({ message: 'Token expired please Login Again' });
+    return res
+      .status(401)
+      .json({ message: "Token expired please Login Again" });
   }
 };

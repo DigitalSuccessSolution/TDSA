@@ -82,37 +82,16 @@ module.exports = (
           width: doc.page.width,
         });
 
-      // --- FOOTER ---
-      const footerY = 480;
-
-      // D. Real Mentor Name (Bottom Right)
-      const displayMentor = mentorName || "Shivangini Gupta";
-      const rightSideX = doc.page.width - 350;
-
-      doc.font("Helvetica-BoldOblique").fontSize(20).fillColor(TEXT_COLOR);
-
-      doc.text(displayMentor, rightSideX, footerY - 5, {
-        width: 250,
-        align: "center",
-      });
-
-      // Label
-      doc.font("Helvetica").fontSize(10).fillColor("#CCCCCC");
-      doc.text("Mentor / Trainer", rightSideX, footerY + 25, {
-        width: 250,
-        align: "center",
-      });
-
-      // E. Certificate Number (Bottom Left)
-      // Added as per user request
+      // E. Certificate Number (Extreme Bottom Right)
       const certID = certificateNumber || "TDSA-Preview";
-      const leftSideX = 50;
+      const rightBottomX = doc.page.width - 250; // More space for larger text
+      const rightBottomY = doc.page.height - 40; 
 
-      doc.font("Helvetica-Bold").fontSize(12).fillColor("#CCCCCC"); // Light gray for ID
+      doc.font("Helvetica-Bold").fontSize(12).fillColor("#FFFFFF"); // Larger and White
 
-      doc.text(`Certificate ID: ${certID}`, leftSideX, footerY + 25, {
-        width: 250,
-        align: "left", // Left aligned
+      doc.text(`Certificate ID: ${certID}`, rightBottomX, rightBottomY, {
+        width: 200,
+        align: "right",
       });
 
       doc.end();
