@@ -2,7 +2,9 @@
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.hostinger.com",
+  port: 465,
+  secure: true, // Use Port 465 with SSL
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
@@ -12,7 +14,7 @@ const transporter = nodemailer.createTransport({
 const sendEmail = async (to, subject, html) => {
   try {
     await transporter.sendMail({
-      from: process.env.SMTP_USER,
+      from: `"Data Science Academy" <${process.env.SMTP_USER}>`,
       to,
       subject,
       html,

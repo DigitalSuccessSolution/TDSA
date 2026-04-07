@@ -5,7 +5,9 @@ const { userTemplates, subjects } = require("../utils/emailTemplates"); // ✅ I
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.hostinger.com",
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
@@ -105,7 +107,7 @@ exports.sendCertificate = async (req, res) => {
     const subject = subjects.certificate_completion({ courseName });
 
     const mailOptions = {
-      from: `"Data Science Academy" <${process.env.SMTP_EMAIL}>`,
+      from: `"Data Science Academy" <${process.env.SMTP_USER}>`,
       to: studentEmail,
       subject: subject,
       html: emailHtml, // ✅ Use Template HTML
