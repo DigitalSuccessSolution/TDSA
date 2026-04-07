@@ -36,7 +36,10 @@ const Login = () => {
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.message || "Login failed");
-
+      
+      // Store refreshToken in localStorage
+      localStorage.setItem("refreshToken", data.refreshToken);
+      
       login(data.user, data.token);
 
       // Redirect user

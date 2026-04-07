@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true },
     password: { type: String, required: true },
     current_session_id: { type: String, default: null },
+    refresh_token: { type: String, default: null }, // NEW: Refresh token store karne ke liye
     resetPasswordOtp: { type: String },
     resetPasswordExpires: { type: Date },
   },

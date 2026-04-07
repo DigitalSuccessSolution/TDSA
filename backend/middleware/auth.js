@@ -30,8 +30,16 @@ exports.protect = async (req, res, next) => {
 
     req.user = await User.findById(decoded.id).select("-password");
     if (!req.user) return res.status(401).json({ message: "User not found" });
+
+    // Strong Security: Session ID check
+    // Agar login/refresh hone par sessionId badal gaya hai, toh purana Access Token invalid ho jayega
+    if (req.user.current_session_id !== decoded.sessionId) {
+      return res.status(401).json({ message: "Session expired, please login again" });
+    }
+
     next();
   } catch (err) {
+    console.error("JWT ERROR:", err.message, "|", err.name);
     return res
       .status(401)
       .json({ message: "Token expired please Login Again" });

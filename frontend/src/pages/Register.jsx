@@ -33,6 +33,9 @@ const Register = () => {
 
       if (!res.ok) throw new Error(data.message || 'Registration failed');
 
+      // Store refreshToken in localStorage
+      localStorage.setItem("refreshToken", data.refreshToken);
+
       // Auto Login after Register
       login(data.user, data.token);
 

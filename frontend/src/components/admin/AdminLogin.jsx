@@ -24,6 +24,7 @@ const AdminLogin = () => {
 
       if (res.ok) {
         localStorage.setItem("token", data.token); // Use standard token key
+        localStorage.setItem("refreshToken", data.refreshToken); // NEW: Store refresh token
         localStorage.setItem("user", JSON.stringify(data.user)); // Store user object for AuthContext
         localStorage.setItem("adminAuthenticated", "true");
         toast.success("Welcome back, Admin!");

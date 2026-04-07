@@ -13,7 +13,7 @@ const { userTemplates, subjects } = require("../utils/emailTemplates");
 const getFacultyId = (req) => {
   return (
     (req.user && req.user.id) ||
-    (req.user && req.user._id) ||
+    (req.user && req.user._id) || 
     (req.faculty && req.faculty.id) ||
     (req.faculty && req.faculty._id)
   );

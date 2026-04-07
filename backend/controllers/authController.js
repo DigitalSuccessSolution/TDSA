@@ -7,11 +7,17 @@ const { sendEmail } = require("../services/emailServices");
 const { userTemplates, subjects } = require("../utils/emailTemplates");
 const JWT_SECRET = process.env.JWT_SECRET || "academy2025supersecretkey123";
 
-// generateToken ab 'sessionId' bhi lega
-const generateToken = (id, sessionId) => {
+// Access Token (1 hour)
+const generateAccessToken = (id, sessionId) => {
   return jwt.sign({ id, sessionId }, JWT_SECRET, {
-    // NEW: sessionId payload me daala
-    expiresIn: "365d",
+    expiresIn: "1h",
+  });
+};
+
+// Refresh Token (30 days)
+const generateRefreshToken = (id, sessionId) => {
+  return jwt.sign({ id, sessionId }, JWT_SECRET, {
+    expiresIn: "30d",
   });
 };
 
@@ -43,11 +49,18 @@ exports.register = async (req, res) => {
     });
 
     // 2. Token generation me session ID pass karein
-    const token = generateToken(user._id, newSessionId); // NEW
+    const accessToken = generateAccessToken(user._id, newSessionId);
+    const refreshToken = generateRefreshToken(user._id, newSessionId);
+
+    // Save refresh token in DB
+    user.refresh_token = refreshToken;
+    await user.save();
 
     res.status(201).json({
       message: "Registration successful!",
-      token,
+      accessToken,
+      token: accessToken, // Backward compatibility
+      refreshToken,
       user: {
         id: user._id,
         name: user.name,
@@ -90,12 +103,20 @@ exports.login = async (req, res) => {
     user.current_session_id = newSessionId; // NEW
     await user.save(); // NEW
 
-    // 3. Naye session ID ke sath token banayein
-    const token = generateToken(user._id, newSessionId); // NEW
+    // 3. Tokens banayein
+    const accessToken = generateAccessToken(user._id, newSessionId);
+    const refreshToken = generateRefreshToken(user._id, newSessionId);
+
+    // 4. DB me update karein
+    user.current_session_id = newSessionId;
+    user.refresh_token = refreshToken;
+    await user.save();
 
     res.json({
       message: "Login successful!",
-      token,
+      accessToken,
+      token: accessToken, // Backward compatibility
+      refreshToken,
       user: {
         id: user._id,
         name: user.name,
@@ -191,11 +212,13 @@ exports.adminLogin = async (req, res) => {
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
 
     if (email === adminEmail && password === adminPassword) {
-      // Create a dummy admin ID for the token
-      const token = generateToken('admin_user_id', 'admin_session');
+      const accessToken = generateAccessToken('admin_user_id', 'admin_session');
+      const refreshToken = generateRefreshToken('admin_user_id', 'admin_session');
       return res.json({
         message: "Admin Login successful!",
-        token,
+        accessToken,
+        token: accessToken, // Backward compatibility
+        refreshToken,
         user: {
           id: 'admin_user_id',
           name: 'Administrator',
@@ -208,6 +231,57 @@ exports.adminLogin = async (req, res) => {
     }
   } catch (error) {
     console.error("Admin Login Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.refreshToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(400).json({ message: "Refresh token is required" });
+    }
+
+    // Verify Refresh Token
+    const decoded = jwt.verify(refreshToken, JWT_SECRET);
+    
+    // Check if user exists and token matches DB
+    const user = await User.findById(decoded.id);
+    if (!user || user.refresh_token !== refreshToken) {
+      return res.status(401).json({ message: "Invalid refresh token" });
+    }
+
+    // Generate NEW tokens (Token Rotation)
+    const newSessionId = crypto.randomBytes(16).toString("hex");
+    const newAccessToken = generateAccessToken(user._id, newSessionId);
+    const newRefreshToken = generateRefreshToken(user._id, newSessionId);
+
+    // Update DB
+    user.current_session_id = newSessionId;
+    user.refresh_token = newRefreshToken;
+    await user.save();
+
+    res.json({
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+    });
+  } catch (error) {
+    console.error("Refresh Token Error:", error);
+    res.status(401).json({ message: "Invalid or expired refresh token" });
+  }
+};
+
+exports.logout = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (user) {
+      user.refresh_token = null;
+      user.current_session_id = null;
+      await user.save();
+    }
+    res.json({ message: "Logged out successfully" });
+  } catch (error) {
+    console.error("Logout Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

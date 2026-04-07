@@ -1,4 +1,4 @@
-console.log("---------------- STARTING BACKEND SERVER ----------------");
+console.log("---- STARTING BACKEND SERVER --");
 // server.js
 const express = require("express");
 const mongoose = require("mongoose");
